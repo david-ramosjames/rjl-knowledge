@@ -7,8 +7,6 @@ import { createMeetingRecord } from "@/lib/db/meetings";
 import { AppError, ErrorCodes } from "@/lib/errors";
 import { parseParticipants } from "@/lib/utils";
 
-export const maxDuration = 120;
-
 function meetingErrorRedirect(code: string, extra?: Record<string, string>) {
   const params = new URLSearchParams({ error: code, ...extra });
   redirect(`/admin/meetings/new?${params.toString()}`);
