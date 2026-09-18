@@ -16,10 +16,10 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
   const user = readUserSession(token);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/80 bg-[rgba(246,245,242,0.86)] backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-baseline gap-2">
-          <span className="font-serif text-2xl tracking-tight text-foreground">RJL Knowledge</span>
+          <span className="font-serif text-2xl tracking-tight text-primary">RJL Knowledge</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           {signedIn ? (

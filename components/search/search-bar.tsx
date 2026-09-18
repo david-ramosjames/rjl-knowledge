@@ -52,7 +52,7 @@ export function SearchBar({
         />
         <button
           type="submit"
-          className="hidden rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground sm:inline-flex"
+          className="hidden rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:inline-flex"
         >
           Search
         </button>

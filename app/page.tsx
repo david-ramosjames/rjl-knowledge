@@ -11,10 +11,10 @@ export default async function HomePage() {
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
       <section className="mx-auto max-w-3xl text-center">
-        <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+        <p className="text-xs font-medium uppercase tracking-[0.22em] text-secondary">
           Ramos James Law
         </p>
-        <h1 className="mt-3 font-serif text-5xl tracking-tight text-foreground sm:text-6xl">
+        <h1 className="mt-3 font-serif text-5xl tracking-tight text-primary sm:text-6xl">
           RJL Knowledge
         </h1>
         <p className="mt-4 text-lg text-muted-foreground sm:text-xl">
