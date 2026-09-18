@@ -12,11 +12,11 @@ This is an internal application, not a public marketing site. Treat every transc
 
 ## What it does
 
-1. An admin pastes a timestamped transcript and an unlisted YouTube URL.
-2. OpenAI extracts substantive, reusable topics from what was actually discussed.
+1. An admin pastes a transcript and, when a recording exists, an unlisted YouTube URL.
+2. OpenAI extracts lasting, reusable topics from what was actually discussed. Action items, weekly status, and other operational chatter are ignored.
 3. The admin reviews, edits, ignores, or merges those topics.
 4. Approved topics appear in the knowledge hub.
-5. Attorneys and staff can search or browse, open a topic, and jump to the exact timestamp in the original meeting video.
+5. Attorneys and staff can search or browse, open a topic, and jump to the original discussion — including a timestamped watch link when a video was attached.
 
 The model is instructed to summarize **only** the transcript. It must not add outside legal knowledge or independent legal advice.
 
@@ -246,13 +246,13 @@ Link `DATABASE_URL` from the Postgres service to the app service in the Railway 
 
 1. Open `/admin`.
 2. Click **Add Meeting**.
-3. Paste a timestamped transcript (`00:31 Speaker:` or `01:12:42` both work).
-4. Paste an unlisted YouTube URL.
+3. Paste a transcript (`00:31 Speaker:` or `01:12:42` both work; timestamps are optional).
+4. Optionally paste an unlisted YouTube URL. Leave it blank for transcript-only meetings.
 5. Click **Process Meeting**.
-6. Review each extracted topic: **Approve**, **Edit**, or **Ignore**.
+6. Review each extracted topic: **Approve**, **Edit**, or **Ignore**. Lasting knowledge is kept; action items and week-to-week operational talk should not appear.
 7. If a possible existing topic is shown, choose **Add to Existing Topic** or **Create New Topic**.
 8. Approved topics appear on the homepage and in search.
-9. On a topic page, **Watch discussion at mm:ss** opens the original video at that timestamp.
+9. On a topic page, **Watch discussion at mm:ss** opens the original video when one exists. Transcript-only sources show the excerpt instead.
 
 If OpenAI fails, the meeting and transcript are still saved. Open the meeting and click **Retry processing**.
 

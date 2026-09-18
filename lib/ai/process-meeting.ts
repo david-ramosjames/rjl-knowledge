@@ -11,6 +11,7 @@ import {
   getOpenAIClient,
   getOpenAIModel,
 } from "@/lib/ai/openai";
+import { isLastingKnowledge } from "@/lib/ai/lasting-knowledge";
 import {
   extractionResponseSchema,
   extractionSystemPrompt,
@@ -118,7 +119,7 @@ export async function processMeeting(meetingId: string) {
         processedAt: new Date(),
         processingError:
           discussions.length === 0
-            ? "No substantive knowledge topics were found in this transcript."
+            ? "No lasting knowledge topics were found. Action items, weekly status, and other operational chatter were ignored."
             : null,
       },
     });
@@ -186,7 +187,10 @@ async function extractDiscussions(input: {
       keywords: uniqueStrings(discussion.keywords).slice(0, 12),
       speakers: uniqueStrings(discussion.speakers),
     }))
-    .filter((discussion) => discussion.title.trim() && discussion.summary.trim());
+    .filter(
+      (discussion) =>
+        discussion.title.trim() && discussion.summary.trim() && isLastingKnowledge(discussion),
+    );
 }
 
 function normalizeExtractedCategory(category: string) {

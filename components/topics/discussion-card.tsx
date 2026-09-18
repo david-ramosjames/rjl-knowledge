@@ -1,4 +1,4 @@
-import { Play } from "lucide-react";
+import { FileText, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,11 +19,12 @@ export function DiscussionCard({
   speakers: unknown;
   sourceSummary: string;
   transcriptExcerpt: string;
-  youtubeVideoId: string;
+  youtubeVideoId: string | null;
   startSeconds: number;
 }) {
   const speakerList = asStringArray(speakers);
-  const watchUrl = timestampedYouTubeUrl(youtubeVideoId, startSeconds);
+  const watchUrl = youtubeVideoId ? timestampedYouTubeUrl(youtubeVideoId, startSeconds) : null;
+  const showTimestamp = Boolean(watchUrl) || startSeconds > 0;
 
   return (
     <Card className="p-6">
@@ -35,17 +36,24 @@ export function DiscussionCard({
             <p className="mt-1 text-sm text-muted-foreground">{speakerList.join(", ")}</p>
           ) : null}
         </div>
-        <Badge className="bg-white">Source discussion</Badge>
+        <Badge className="bg-white">{watchUrl ? "Source discussion" : "Transcript source"}</Badge>
       </div>
       <p className="mt-4 text-sm leading-7 text-foreground/90">{sourceSummary}</p>
-      <div className="mt-5">
-        <Button asChild>
-          <a href={watchUrl} target="_blank" rel="noreferrer">
-            <Play className="size-4" />
-            Watch discussion at {formatTimestamp(startSeconds)}
-          </a>
-        </Button>
-      </div>
+      {watchUrl ? (
+        <div className="mt-5">
+          <Button asChild>
+            <a href={watchUrl} target="_blank" rel="noreferrer">
+              <Play className="size-4" />
+              Watch discussion at {formatTimestamp(startSeconds)}
+            </a>
+          </Button>
+        </div>
+      ) : showTimestamp ? (
+        <p className="mt-5 inline-flex items-center gap-2 text-sm text-muted-foreground">
+          <FileText className="size-4" />
+          In transcript at {formatTimestamp(startSeconds)}
+        </p>
+      ) : null}
       {transcriptExcerpt ? (
         <blockquote className="mt-5 border-l-2 border-border pl-4 text-sm leading-7 text-muted-foreground">
           {transcriptExcerpt}

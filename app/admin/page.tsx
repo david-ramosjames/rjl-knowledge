@@ -33,7 +33,8 @@ export default async function AdminPage() {
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Meeting processing</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Paste a transcript, extract topics, review them, then publish into the knowledge hub.
+            Paste a transcript — with or without a video — then review lasting topics before they go
+            into the knowledge hub.
           </p>
         </div>
         <Button asChild size="lg">

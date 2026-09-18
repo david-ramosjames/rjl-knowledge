@@ -20,7 +20,7 @@ export function MeetingForm({ error }: { error?: string | null }) {
         code={error}
         message={
           error === ErrorCodes.VALIDATION
-            ? "Title, meeting date, YouTube URL, and transcript are required."
+            ? "Title, meeting date, and transcript are required."
             : undefined
         }
       />
@@ -37,16 +37,15 @@ export function MeetingForm({ error }: { error?: string | null }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="videoUrl">YouTube URL</Label>
+        <Label htmlFor="videoUrl">YouTube URL (optional)</Label>
         <Input
           id="videoUrl"
           name="videoUrl"
-          required
           placeholder="https://www.youtube.com/watch?v=..."
         />
         <p className="text-xs leading-5 text-muted-foreground">
-          Unlisted YouTube videos are convenient, but anyone who has the link can still watch them.
-          Do not treat an unlisted URL as private storage.
+          Leave this blank if the meeting only has a transcript. Unlisted YouTube videos can still be
+          watched by anyone who has the link.
         </p>
       </div>
 
@@ -61,11 +60,13 @@ export function MeetingForm({ error }: { error?: string | null }) {
           id="transcript"
           name="transcript"
           required
-          className="min-h-[320px] font-mono text-[13px] leading-6"
+          className="min-h-80 font-mono text-[13px] leading-6"
           placeholder={EXAMPLE_TRANSCRIPT}
         />
-        <p className="text-xs text-muted-foreground">
-          Paste a timestamped transcript. Formats like 00:31 or 01:12:42 both work.
+        <p className="text-xs leading-5 text-muted-foreground">
+          Paste the transcript. Timestamps like 00:31 or 01:12:42 help locate a discussion even when
+          there is no video. Processing keeps lasting legal and practice knowledge and skips action
+          items, weekly status, and other operational chatter.
         </p>
       </div>
 

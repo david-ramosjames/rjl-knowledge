@@ -16,7 +16,8 @@ export default async function NewMeetingPage({
       <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Add meeting</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Save the source first, then extract topics. Nothing publishes until you review it.
+        Save the source first, then extract lasting topics. A YouTube URL is optional when there is
+        no recording. Nothing publishes until you review it.
       </p>
       <div className="mt-8">
         <MeetingForm error={error} />

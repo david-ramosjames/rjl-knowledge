@@ -63,10 +63,12 @@ export function CandidateCard({ candidate, meetingId }: { candidate: Candidate; 
           <h3 className="text-xl font-semibold tracking-tight">{candidate.title}</h3>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Badge className="bg-white">{candidate.category}</Badge>
-            <span>
-              {formatTimestamp(candidate.startSeconds)}
-              {candidate.endSeconds ? ` – ${formatTimestamp(candidate.endSeconds)}` : ""}
-            </span>
+            {candidate.startSeconds > 0 || candidate.endSeconds ? (
+              <span>
+                {formatTimestamp(candidate.startSeconds)}
+                {candidate.endSeconds ? ` – ${formatTimestamp(candidate.endSeconds)}` : ""}
+              </span>
+            ) : null}
             {speakers.length > 0 ? <span>{speakers.join(", ")}</span> : null}
           </div>
         </div>

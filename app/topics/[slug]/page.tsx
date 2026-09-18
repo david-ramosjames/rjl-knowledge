@@ -68,8 +68,8 @@ export default async function TopicPage({
           Source discussions
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Every claim on this page traces back to a meeting. Watch the original discussion rather than treating the
-          summary as independent advice.
+          Every claim on this page traces back to a meeting. Use the source discussion — and the
+          recording when one exists — rather than treating the summary as independent advice.
         </p>
         <div className="mt-6 space-y-4">
           {topic.discussions.map((discussion) => (

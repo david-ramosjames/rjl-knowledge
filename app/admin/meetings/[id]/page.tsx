@@ -49,10 +49,14 @@ export default async function MeetingDetailPage({
 
       <Card className="mt-6 space-y-3 p-6 text-sm">
         <p>
-          <span className="text-muted-foreground">YouTube:</span>{" "}
-          <a className="text-accent hover:underline" href={meeting.videoUrl} target="_blank" rel="noreferrer">
-            {meeting.videoUrl}
-          </a>
+          <span className="text-muted-foreground">Recording:</span>{" "}
+          {meeting.videoUrl ? (
+            <a className="text-accent hover:underline" href={meeting.videoUrl} target="_blank" rel="noreferrer">
+              {meeting.videoUrl}
+            </a>
+          ) : (
+            "Transcript only — no video was attached."
+          )}
         </p>
         <p>
           <span className="text-muted-foreground">Participants:</span>{" "}
@@ -61,9 +65,11 @@ export default async function MeetingDetailPage({
         <p>
           <span className="text-muted-foreground">Extracted topics:</span> {meeting.candidates.length}
         </p>
-        <p className="text-xs leading-5 text-muted-foreground">
-          Unlisted YouTube videos can still be viewed by anyone who possesses the link.
-        </p>
+        {meeting.videoUrl ? (
+          <p className="text-xs leading-5 text-muted-foreground">
+            Unlisted YouTube videos can still be viewed by anyone who possesses the link.
+          </p>
+        ) : null}
       </Card>
 
       <div className="mt-6 flex flex-wrap gap-3">

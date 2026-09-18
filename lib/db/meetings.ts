@@ -44,24 +44,32 @@ export async function createMeetingRecord(input: {
   transcript: string;
   participants: string[];
 }) {
-  const youtubeVideoId = extractYouTubeVideoId(input.videoUrl);
-  if (!youtubeVideoId) {
-    throw new AppError(ErrorCodes.INVALID_YOUTUBE_URL, "Paste a valid YouTube URL.");
-  }
   if (!input.transcript.trim()) {
-    throw new AppError(ErrorCodes.MISSING_TRANSCRIPT, "Paste a timestamped transcript.");
+    throw new AppError(ErrorCodes.MISSING_TRANSCRIPT, "Paste a transcript.");
   }
 
-  const existing = await prisma.meeting.findFirst({
-    where: { youtubeVideoId },
-    orderBy: { createdAt: "desc" },
-  });
+  const trimmedUrl = input.videoUrl.trim();
+  let youtubeVideoId: string | null = null;
+  let videoUrl: string | null = null;
 
-  if (existing) {
-    throw new AppError(
-      ErrorCodes.DUPLICATE_PROCESSING,
-      `This YouTube video was already processed as “${existing.title}”. Open that meeting instead of creating a duplicate.`,
-    );
+  if (trimmedUrl) {
+    youtubeVideoId = extractYouTubeVideoId(trimmedUrl);
+    if (!youtubeVideoId) {
+      throw new AppError(ErrorCodes.INVALID_YOUTUBE_URL, "Paste a valid YouTube URL, or leave the video field blank.");
+    }
+    videoUrl = canonicalYouTubeUrl(youtubeVideoId);
+
+    const existing = await prisma.meeting.findFirst({
+      where: { youtubeVideoId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (existing) {
+      throw new AppError(
+        ErrorCodes.DUPLICATE_PROCESSING,
+        `This YouTube video was already processed as “${existing.title}”. Open that meeting instead of creating a duplicate.`,
+      );
+    }
   }
 
   try {
@@ -69,7 +77,7 @@ export async function createMeetingRecord(input: {
       data: {
         title: input.title.trim(),
         meetingDate: input.meetingDate,
-        videoUrl: canonicalYouTubeUrl(youtubeVideoId),
+        videoUrl,
         youtubeVideoId,
         transcript: input.transcript.trim(),
         participants: input.participants,

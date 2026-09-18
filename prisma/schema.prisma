@@ -30,8 +30,8 @@ model Meeting {
   id              String        @id @default(cuid())
   title           String
   meetingDate     DateTime
-  videoUrl        String
-  youtubeVideoId  String
+  videoUrl        String?
+  youtubeVideoId  String?
   transcript      String        @db.Text
   participants    String[]      @default([])
   status          MeetingStatus @default(DRAFT)
