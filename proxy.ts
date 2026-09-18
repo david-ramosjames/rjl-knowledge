@@ -5,7 +5,9 @@ export function proxy(request: NextRequest) {
   if (!isAuthEnabled()) return NextResponse.next();
 
   const { pathname } = request.nextUrl;
-  if (pathname === "/login") return NextResponse.next();
+  if (pathname === "/login" || pathname.startsWith("/api/auth/google")) {
+    return NextResponse.next();
+  }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (isValidSessionToken(token)) return NextResponse.next();

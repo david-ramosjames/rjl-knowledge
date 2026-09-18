@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { logoutAction } from "@/app/actions/auth";
-import { SESSION_COOKIE, isAuthEnabled, isValidSessionToken } from "@/lib/auth/session";
+import {
+  SESSION_COOKIE,
+  isAuthEnabled,
+  isValidSessionToken,
+  readUserSession,
+} from "@/lib/auth/session";
 import { Button } from "@/components/ui/button";
 
 export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin" }) {
   const authEnabled = isAuthEnabled();
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   const signedIn = !authEnabled || isValidSessionToken(token);
+  const user = readUserSession(token);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/80 bg-[rgba(246,245,242,0.86)] backdrop-blur-md">
@@ -28,7 +34,12 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
                 <Link href="/admin">Admin</Link>
               </Button>
               {authEnabled ? (
-                <form action={logoutAction}>
+                <form action={logoutAction} className="flex items-center gap-2">
+                  {user?.email ? (
+                    <span className="hidden max-w-[12rem] truncate px-2 text-xs text-muted-foreground sm:inline">
+                      {user.email}
+                    </span>
+                  ) : null}
                   <Button type="submit" variant="ghost" size="sm">
                     Sign out
                   </Button>

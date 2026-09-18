@@ -56,12 +56,28 @@ Admin:
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `OPENAI_API_KEY` | Yes, for processing | Meeting topic extraction and topic synthesis |
 | `OPENAI_MODEL` | No | Defaults to `gpt-4o` |
-| `AUTH_PASSWORD` | No | If set, the whole app requires this password |
-| `AUTH_SECRET` | No | Cookie signing secret; defaults to `AUTH_PASSWORD` |
+| `GOOGLE_CLIENT_ID` | Yes, for login | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Yes, for login | Google OAuth client secret |
+| `AUTH_URL` | Recommended in production | Public app origin, e.g. `https://your-app.up.railway.app` |
+| `AUTH_SECRET` | Recommended | Cookie signing secret; falls back to `GOOGLE_CLIENT_SECRET` |
+| `GOOGLE_ALLOWED_DOMAIN` | No | Only allow emails at this domain, e.g. `ramosjameslaw.com` |
+| `GOOGLE_ALLOWED_EMAILS` | No | Comma-separated allowlist of Google emails |
+| `AUTH_PASSWORD` | No | Password login only if Google is not configured |
 
-Do not expose `OPENAI_API_KEY` or `DATABASE_URL` to the browser. They are server-only.
+Do not expose `OPENAI_API_KEY`, `DATABASE_URL`, or `GOOGLE_CLIENT_SECRET` to the browser. They are server-only.
 
-If `AUTH_PASSWORD` is unset, the app is open. That is convenient for first local setup. Set a password before sharing a deployed URL.
+If Google credentials are unset, the app is open. That is convenient for first local setup. Set Google sign-in before sharing a deployed URL.
+
+### Google Cloud setup
+
+1. Create an OAuth client (Web application) in Google Cloud.
+2. Add authorized JavaScript origins:
+   - `http://localhost:3000`
+   - `https://your-railway-domain`
+3. Add authorized redirect URIs:
+   - `http://localhost:3000/api/auth/google/callback`
+   - `https://your-railway-domain/api/auth/google/callback`
+4. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env` and in the Railway app service variables.
 
 ## Prisma
 
@@ -177,13 +193,11 @@ In the Next.js service variables:
 ```text
 OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o
-```
-
-Optional but recommended for a live internal deployment:
-
-```text
-AUTH_PASSWORD=choose-a-strong-password
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+AUTH_URL=https://your-app.up.railway.app
 AUTH_SECRET=another-long-random-string
+GOOGLE_ALLOWED_DOMAIN=ramosjameslaw.com
 ```
 
 ## Deploying the Next.js app to Railway
@@ -192,7 +206,7 @@ AUTH_SECRET=another-long-random-string
 2. In Railway, **New Service → GitHub Repo** (or `railway up`).
 3. Attach / share the Postgres `DATABASE_URL` variable with the **app** service using a Railway variable reference. Do not leave it only on the Postgres service.
 4. Add `OPENAI_API_KEY`.
-5. Add `AUTH_PASSWORD` if you want the hub locked.
+5. Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `AUTH_URL`.
 6. Deploy. Nixpacks is configured to use Node 22.
 7. Open the public URL, visit `/admin`, and process a meeting.
 
@@ -206,7 +220,8 @@ railway login
 railway init
 railway add --database postgres
 railway variable set OPENAI_API_KEY=sk-...
-railway variable set AUTH_PASSWORD=...
+railway variable set GOOGLE_CLIENT_ID=...
+railway variable set GOOGLE_CLIENT_SECRET=...
 railway up
 railway run npm run db:seed
 ```
