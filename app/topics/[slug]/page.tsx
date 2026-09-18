@@ -34,7 +34,7 @@ export default async function TopicPage({
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
       <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-        ← Knowledge hub
+        ← Knowledge Hub
       </Link>
       <div className="mt-6">
         <Badge className="bg-white">{topic.category}</Badge>

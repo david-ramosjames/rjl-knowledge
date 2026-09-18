@@ -19,7 +19,7 @@ const LOGIN_ERRORS: Record<string, string> = {
   state: "That sign-in attempt expired. Try again.",
   oauth: "Google sign-in failed. Try again.",
   unverified: "That Google account does not have a verified email.",
-  forbidden: "That Google account is not allowed to access RJL Knowledge.",
+  forbidden: "That Google account is not allowed to access the Knowledge Hub.",
 };
 
 export default async function LoginPage({
@@ -37,12 +37,12 @@ export default async function LoginPage({
     return (
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-16">
         <RjlLogo />
-        <h1 className="mt-6 font-serif text-4xl text-primary">RJL Knowledge</h1>
+        <h1 className="mt-6 font-serif text-4xl text-primary">Knowledge Hub</h1>
         <p className="mt-3 text-sm text-muted-foreground">
           No sign-in is configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to require Google login.
         </p>
         <Link href="/" className="mt-6 text-sm text-accent hover:underline">
-          Continue to the hub
+          Continue to the Knowledge Hub
         </Link>
       </main>
     );
@@ -52,9 +52,9 @@ export default async function LoginPage({
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-16">
       <RjlLogo />
       <p className="mt-6 text-xs font-medium uppercase tracking-[0.22em] text-secondary">Internal</p>
-      <h1 className="mt-3 font-serif text-4xl text-primary">RJL Knowledge</h1>
+      <h1 className="mt-3 font-serif text-4xl text-primary">Knowledge Hub</h1>
       <p className="mt-3 text-sm text-muted-foreground">
-        Sign in with your Google account to open this private knowledge hub.
+        Sign in with your Google account to open this private Knowledge Hub.
       </p>
 
       <div className="mt-8 space-y-4">

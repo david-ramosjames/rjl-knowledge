@@ -25,7 +25,7 @@ export default async function SearchPage({
     ? `Results for “${query}”`
     : category
       ? category
-      : "Search the knowledge hub";
+      : "Search the Knowledge Hub";
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">

@@ -14,7 +14,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-3xl text-center">
         <RjlLogo className="mx-auto" />
         <h1 className="mt-6 font-serif text-5xl tracking-tight text-primary sm:text-6xl">
-          RJL Knowledge
+          Knowledge Hub
         </h1>
         <p className="mt-4 text-lg text-muted-foreground sm:text-xl">
           Search what our attorneys have discussed.

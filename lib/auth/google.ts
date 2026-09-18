@@ -125,7 +125,7 @@ export function assertGoogleUserAllowed(email: string) {
 
   throw new AppError(
     ErrorCodes.VALIDATION,
-    "This Google account is not allowed to access RJL Knowledge.",
+    "This Google account is not allowed to access the Knowledge Hub.",
   );
 }
 

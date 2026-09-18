@@ -34,7 +34,7 @@ export default async function AdminPage() {
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Meeting processing</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
             Paste a transcript — with or without a video — then review lasting topics before they go
-            into the knowledge hub.
+            into the Knowledge Hub.
           </p>
         </div>
         <Button asChild size="lg">

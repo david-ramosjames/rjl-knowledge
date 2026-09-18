@@ -19,15 +19,17 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
   return (
     <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" aria-label="RJL Knowledge home" className="flex items-center gap-3">
+        <Link href="/" aria-label="Knowledge Hub home" className="flex items-center gap-3">
           <RjlLogo variant="mark" decorative />
-          <span className="font-serif text-2xl tracking-tight text-primary">Knowledge</span>
+          <span className="whitespace-nowrap font-serif text-xl tracking-tight text-primary sm:text-2xl">
+            Knowledge Hub
+          </span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           {signedIn ? (
             <>
               <Button asChild variant="ghost" size="sm">
-                <Link href="/">Hub</Link>
+                <Link href="/">Home</Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/search">Search</Link>
@@ -59,7 +61,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-border/80">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-6 text-xs text-muted-foreground sm:px-6">
-        <span>Internal knowledge hub · Ramos James Law</span>
+        <span>Knowledge Hub · Ramos James Law</span>
         <span>Meetings are sources. Topics are the knowledge.</span>
       </div>
     </footer>

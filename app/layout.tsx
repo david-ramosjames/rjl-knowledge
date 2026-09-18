@@ -21,8 +21,8 @@ const instrument = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: "RJL Knowledge",
-    template: "%s · RJL Knowledge",
+    default: "Knowledge Hub",
+    template: "%s · Knowledge Hub",
   },
   description: "Search what Ramos James Law attorneys have discussed.",
 };

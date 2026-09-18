@@ -27,7 +27,7 @@ export const synthesisResponseSchema = z.object({
 });
 
 export function extractionSystemPrompt() {
-  return `You extract reusable internal knowledge from Ramos James Law attorney meeting transcripts for RJL Knowledge.
+  return `You extract reusable internal knowledge from Ramos James Law attorney meeting transcripts for the Knowledge Hub.
 
 Meetings are sources. Topics are permanent knowledge objects. Extract only knowledge that would still help an attorney or staff member months from now.
 

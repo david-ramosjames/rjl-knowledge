@@ -1,8 +1,8 @@
-# RJL Knowledge
+# Knowledge Hub
 
 Private internal knowledge hub for Ramos James Law.
 
-Attorney meetings are recorded and transcribed, but the useful material is usually trapped in those recordings. RJL Knowledge turns each meeting into **source discussions** and publishes the durable knowledge as **topics**.
+Attorney meetings are recorded and transcribed, but the useful material is usually trapped in those recordings. The Knowledge Hub turns each meeting into **source discussions** and publishes the durable knowledge as **topics**.
 
 **Meetings are sources. Topics are the permanent knowledge objects.**
 
@@ -15,7 +15,7 @@ This is an internal application, not a public marketing site. Treat every transc
 1. An admin pastes a transcript and, when a recording exists, an unlisted YouTube URL.
 2. OpenAI extracts lasting, reusable topics from what was actually discussed. Action items, weekly status, and other operational chatter are ignored.
 3. The admin reviews, edits, ignores, or merges those topics.
-4. Approved topics appear in the knowledge hub.
+4. Approved topics appear in the Knowledge Hub.
 5. Attorneys and staff can search or browse, open a topic, and jump to the original discussion — including a timestamped watch link when a video was attached.
 
 The model is instructed to summarize **only** the transcript. It must not add outside legal knowledge or independent legal advice.

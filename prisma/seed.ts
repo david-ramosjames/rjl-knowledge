@@ -49,7 +49,7 @@ async function main() {
       processedAt: new Date("2026-09-04T18:00:00.000Z"),
       transcript: `[DEMO PLACEHOLDER TRANSCRIPT — not an actual RJL meeting]
 
-00:12 Laura: This is demo material for RJL Knowledge. Let's talk through treatment gaps.
+00:12 Laura: This is demo material for the Knowledge Hub. Let's talk through treatment gaps.
 01:05 Ryan: If a client stops treating for several months, the carrier will argue causation.
 02:10 Laura: We should also look at whether a low property-damage case has enough medical to keep.
 04:20 Ryan: And if the client is not communicating, we may need to talk about disengaging.`,
