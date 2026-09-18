@@ -76,7 +76,11 @@ If Google credentials are unset, the app is open. That is convenient for first l
    - `https://your-railway-domain`
 3. Add authorized redirect URIs:
    - `http://localhost:3000/api/auth/google/callback`
-   - `https://your-railway-domain/api/auth/google/callback`
+   - `https://rjl-knowledge-production.up.railway.app/api/auth/google/callback`
+
+The Railway value must include `/api/auth/google/callback`. The site root (`https://rjl-knowledge-production.up.railway.app`) is an origin, not a redirect URI.
+
+Also set `AUTH_URL=https://rjl-knowledge-production.up.railway.app` on the Railway app service so Google always receives an `https` callback. Google blocks `http://` redirect URIs in production with “Access blocked: Authorization Error / invalid_request”.
 4. Put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env` and in the Railway app service variables.
 
 ## Prisma

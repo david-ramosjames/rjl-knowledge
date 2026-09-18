@@ -130,10 +130,18 @@ export function assertGoogleUserAllowed(email: string) {
 }
 
 export function publicOrigin(request: Request) {
-  if (process.env.AUTH_URL) return process.env.AUTH_URL.replace(/\/$/, "");
+  const configured = process.env.AUTH_URL?.trim().replace(/\/$/, "");
+  if (configured) return configured.replace(/^http:\/\//i, "https://");
+
+  const railwayHost = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
+  if (railwayHost) return `https://${railwayHost.replace(/^https?:\/\//, "")}`;
+
   const url = new URL(request.url);
-  const proto = request.headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host;
+  const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host;
+  const host = forwardedHost.split(",")[0]?.trim() || url.host;
+  const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const proto = isLocal ? forwardedProto || url.protocol.replace(":", "") || "http" : "https";
   return `${proto}://${host}`;
 }
 
