@@ -186,6 +186,16 @@ or use Railway’s one-off command / shell against the app service.
 
 The app service is missing the Railway Postgres URL. Add the `DATABASE_URL` reference above, then redeploy.
 
+### `invalid port number in database URL` (P1013)
+
+Prisma received a `DATABASE_URL` it could not parse. The usual causes:
+
+1. `DATABASE_URL` was typed as `${{Postgres.DATABASE_URL}}` instead of added with Railway’s **variable reference** picker.
+2. The Postgres password contains `@`, `:`, `/`, `#`, or `%` and was not URL-encoded.
+3. The app `DATABASE_URL` is not the Postgres connection string (for example the Railway website URL).
+
+Fix: delete the app service `DATABASE_URL`, add it again with **Add a variable reference** → Postgres → `DATABASE_URL`, then redeploy. The value should look like `postgresql://postgres:...@...:PORT/railway`.
+
 ## Adding OPENAI_API_KEY
 
 In the Next.js service variables:
