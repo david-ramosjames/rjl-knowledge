@@ -21,7 +21,7 @@ import {
 } from "@/lib/ai/prompts";
 import { CandidateStatus, MeetingStatus } from "@/lib/generated/prisma/client";
 
-export async function processMeeting(meetingId: string) {
+export async function processMeeting(meetingId: string, options?: { force?: boolean }) {
   const meeting = await prisma.meeting.findUnique({
     where: { id: meetingId },
     include: {
@@ -37,11 +37,17 @@ export async function processMeeting(meetingId: string) {
     (candidate) => candidate.status === CandidateStatus.PENDING || candidate.status === CandidateStatus.APPROVED,
   );
 
-  if (approvedOrPending.length > 0 && meeting.status !== MeetingStatus.FAILED) {
+  if (!options?.force && approvedOrPending.length > 0 && meeting.status !== MeetingStatus.FAILED) {
     throw new AppError(
       ErrorCodes.DUPLICATE_PROCESSING,
       "This meeting already has extracted topics. Open the review screen instead of processing it again.",
     );
+  }
+
+  if (options?.force) {
+    await prisma.topicCandidate.deleteMany({
+      where: { meetingId: meeting.id, status: CandidateStatus.PENDING },
+    });
   }
 
   if (!meeting.transcript.trim()) {
@@ -57,6 +63,11 @@ export async function processMeeting(meetingId: string) {
   });
 
   try {
+    logInfo("Sending meeting transcript to OpenAI", {
+      meetingId: meeting.id,
+      transcriptChars: meeting.transcript.length,
+      force: Boolean(options?.force),
+    });
     const discussions = await extractDiscussions({
       title: meeting.title,
       meetingDate: meeting.meetingDate.toISOString().slice(0, 10),
@@ -194,7 +205,8 @@ async function runExtraction(messages: { role: "system" | "user"; content: strin
     );
   }
 
-  return parsed.data.discussions
+  const rawCount = parsed.data.discussions.length;
+  const kept = parsed.data.discussions
     .map((discussion) => ({
       ...discussion,
       category: normalizeExtractedCategory(discussion.category),
@@ -202,10 +214,10 @@ async function runExtraction(messages: { role: "system" | "user"; content: strin
       keywords: uniqueStrings(discussion.keywords).slice(0, 12),
       speakers: uniqueStrings(discussion.speakers),
     }))
-    .filter(
-      (discussion) =>
-        discussion.title.trim() && discussion.summary.trim() && isLastingKnowledge(discussion),
-    );
+    .filter((discussion) => discussion.title.trim() && discussion.summary.trim() && isLastingKnowledge(discussion));
+
+  logInfo("OpenAI topic extraction result", { rawCount, keptCount: kept.length });
+  return kept;
 }
 
 function normalizeExtractedCategory(category: string) {

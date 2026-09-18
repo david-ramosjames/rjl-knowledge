@@ -7,8 +7,6 @@ const TASK_POINT =
   /^(call|email|text|follow up|send|schedule|set up|reach out|remind|assign|check in with|ping|loop in)\b/i;
 
 export function isLastingKnowledge(discussion: ExtractedDiscussion) {
-  if (discussion.is_lasting_knowledge === false) return false;
-
   const title = discussion.title.trim();
   if (!title) return false;
   if (OPERATIONAL_TITLE.test(title)) return false;

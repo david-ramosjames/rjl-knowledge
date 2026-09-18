@@ -7,6 +7,8 @@ import { createMeetingRecord } from "@/lib/db/meetings";
 import { AppError, ErrorCodes } from "@/lib/errors";
 import { parseParticipants } from "@/lib/utils";
 
+export const maxDuration = 120;
+
 function meetingErrorRedirect(code: string, extra?: Record<string, string>) {
   const params = new URLSearchParams({ error: code, ...extra });
   redirect(`/admin/meetings/new?${params.toString()}`);
@@ -57,9 +59,12 @@ export async function createAndProcessMeetingAction(formData: FormData) {
   redirect(`/admin/meetings/${meetingId}/review`);
 }
 
-export async function retryProcessMeetingAction(meetingId: string) {
+export async function retryProcessMeetingAction(formData: FormData) {
+  const meetingId = String(formData.get("meetingId") ?? "").trim();
+  if (!meetingId) redirect("/admin");
+
   try {
-    await processMeeting(meetingId);
+    await processMeeting(meetingId, { force: true });
   } catch (error) {
     if (error instanceof AppError && error.code === ErrorCodes.DUPLICATE_PROCESSING) {
       redirect(`/admin/meetings/${meetingId}/review`);
