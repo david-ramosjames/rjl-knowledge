@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { loginAction } from "@/app/actions/auth";
+import { RjlLogo } from "@/components/brand/rjl-logo";
 import { ErrorBanner } from "@/components/error-banner";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,8 @@ export default async function LoginPage({
   if (!isAuthEnabled()) {
     return (
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-16">
-        <h1 className="font-serif text-4xl text-primary">RJL Knowledge</h1>
+        <RjlLogo />
+        <h1 className="mt-6 font-serif text-4xl text-primary">RJL Knowledge</h1>
         <p className="mt-3 text-sm text-muted-foreground">
           No sign-in is configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to require Google login.
         </p>
@@ -48,7 +50,8 @@ export default async function LoginPage({
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-16">
-      <p className="text-xs font-medium uppercase tracking-[0.22em] text-secondary">Internal</p>
+      <RjlLogo />
+      <p className="mt-6 text-xs font-medium uppercase tracking-[0.22em] text-secondary">Internal</p>
       <h1 className="mt-3 font-serif text-4xl text-primary">RJL Knowledge</h1>
       <p className="mt-3 text-sm text-muted-foreground">
         Sign in with your Google account to open this private knowledge hub.
