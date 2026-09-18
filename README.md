@@ -1,36 +1,248 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RJL Knowledge
 
-## Getting Started
+Private internal knowledge hub for Ramos James Law.
 
-First, run the development server:
+Attorney meetings are recorded and transcribed, but the useful material is usually trapped in those recordings. RJL Knowledge turns each meeting into **source discussions** and publishes the durable knowledge as **topics**.
+
+**Meetings are sources. Topics are the permanent knowledge objects.**
+
+Over time, later meetings that return to the same subject should attach a new discussion to the existing topic instead of creating a duplicate page.
+
+This is an internal application, not a public marketing site. Treat every transcript as confidential.
+
+## What it does
+
+1. An admin pastes a timestamped transcript and an unlisted YouTube URL.
+2. OpenAI extracts substantive, reusable topics from what was actually discussed.
+3. The admin reviews, edits, ignores, or merges those topics.
+4. Approved topics appear in the knowledge hub.
+5. Attorneys and staff can search or browse, open a topic, and jump to the exact timestamp in the original meeting video.
+
+The model is instructed to summarize **only** the transcript. It must not add outside legal knowledge or independent legal advice.
+
+## Local setup
+
+Requirements:
+
+- Node.js 22+
+- A PostgreSQL database (local or Railway)
+- An OpenAI API key
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Edit `.env` with real values, then:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx prisma generate
+npx prisma migrate deploy
+npm run db:seed
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+Admin:
 
-To learn more about Next.js, take a look at the following resources:
+- [http://localhost:3000/admin](http://localhost:3000/admin)
+- Add Meeting: `/admin/meetings/new`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `OPENAI_API_KEY` | Yes, for processing | Meeting topic extraction and topic synthesis |
+| `OPENAI_MODEL` | No | Defaults to `gpt-4o` |
+| `AUTH_PASSWORD` | No | If set, the whole app requires this password |
+| `AUTH_SECRET` | No | Cookie signing secret; defaults to `AUTH_PASSWORD` |
 
-## Deploy on Vercel
+Do not expose `OPENAI_API_KEY` or `DATABASE_URL` to the browser. They are server-only.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If `AUTH_PASSWORD` is unset, the app is open. That is convenient for first local setup. Set a password before sharing a deployed URL.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Prisma
+
+Generate the client:
+
+```bash
+npm run db:generate
+```
+
+Apply migrations to an existing database:
+
+```bash
+npm run db:migrate
+```
+
+Create a new migration during development:
+
+```bash
+npm run db:migrate:dev
+```
+
+Push the schema without migration history (local experiments only):
+
+```bash
+npm run db:push
+```
+
+## Seed command
+
+```bash
+npm run db:seed
+```
+
+This loads clearly labeled **DEMO PLACEHOLDER** topics and two fake meetings, including:
+
+- Gaps in Medical Treatment
+- Airbnb Premises Liability Cases
+- Evaluating Low Property Damage Cases
+- When to Disengage a Client
+- UM/UIM Coverage Issues
+- Commercial Trucking Case Evaluation
+
+“Gaps in Medical Treatment” is attached to both demo meetings so you can see one topic with multiple source discussions.
+
+The seed video is a public placeholder (`Big Buck Bunny`) so timestamp links work. It is not an RJL recording.
+
+## npm scripts
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the Next.js dev server |
+| `npm run build` | Generate Prisma Client and build the app |
+| `npm start` | Start the production server |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript check |
+| `npm run db:generate` | `prisma generate` |
+| `npm run db:migrate` | `prisma migrate deploy` |
+| `npm run db:migrate:dev` | `prisma migrate dev` |
+| `npm run db:seed` | Seed demo data |
+| `npm run db:studio` | Open Prisma Studio |
+
+`postinstall` also runs `prisma generate`.
+
+## Railway Postgres
+
+1. Create a Railway project.
+2. Add a **PostgreSQL** plugin/service.
+3. Copy the Postgres `DATABASE_URL` from the database service variables.
+4. Create a second service for this Next.js app from the GitHub repo or Railway CLI.
+
+Railway’s default Postgres URL is enough for this MVP. If you later put a pooler in front of Postgres, keep:
+
+- `DATABASE_URL` for the app runtime
+- A direct URL for Prisma migrations, if the pooler cannot run migrations
+
+For this project, `prisma.config.ts` and the app both read `DATABASE_URL`.
+
+## Connecting DATABASE_URL
+
+In the Next.js service on Railway, add:
+
+```text
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require
+```
+
+Use the value Railway provides. Do not commit it.
+
+Then run migrations. This repo’s `railway.json` start command is:
+
+```text
+npx prisma migrate deploy && npm run start
+```
+
+That applies migrations on each deploy before the app boots.
+
+To load demo content on Railway after the first successful deploy:
+
+```bash
+railway run npm run db:seed
+```
+
+or use Railway’s one-off command / shell against the app service.
+
+## Adding OPENAI_API_KEY
+
+In the Next.js service variables:
+
+```text
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o
+```
+
+Optional but recommended for a live internal deployment:
+
+```text
+AUTH_PASSWORD=choose-a-strong-password
+AUTH_SECRET=another-long-random-string
+```
+
+## Deploying the Next.js app to Railway
+
+1. Push this repository to GitHub (or deploy from the local directory with the Railway CLI).
+2. In Railway, **New Service → GitHub Repo** (or `railway up`).
+3. Attach / share the Postgres `DATABASE_URL` variable with the app service.
+4. Add `OPENAI_API_KEY`.
+5. Add `AUTH_PASSWORD` if you want the hub locked.
+6. Deploy. Nixpacks is configured to use Node 22.
+7. Open the public URL, visit `/admin`, and process a meeting.
+
+If build fails on `prisma generate`, confirm `postinstall` ran and that Node 22 is in use.
+
+### Railway CLI sketch
+
+```bash
+npm i -g @railway/cli
+railway login
+railway init
+railway add --database postgres
+railway variable set OPENAI_API_KEY=sk-...
+railway variable set AUTH_PASSWORD=...
+railway up
+railway run npm run db:seed
+```
+
+Link `DATABASE_URL` from the Postgres service to the app service in the Railway dashboard if it is not injected automatically.
+
+## Using the product
+
+1. Open `/admin`.
+2. Click **Add Meeting**.
+3. Paste a timestamped transcript (`00:31 Speaker:` or `01:12:42` both work).
+4. Paste an unlisted YouTube URL.
+5. Click **Process Meeting**.
+6. Review each extracted topic: **Approve**, **Edit**, or **Ignore**.
+7. If a possible existing topic is shown, choose **Add to Existing Topic** or **Create New Topic**.
+8. Approved topics appear on the homepage and in search.
+9. On a topic page, **Watch discussion at mm:ss** opens the original video at that timestamp.
+
+If OpenAI fails, the meeting and transcript are still saved. Open the meeting and click **Retry processing**.
+
+## Architecture
+
+```text
+/app            Hub, search, topic pages, admin, server actions
+/components     UI
+/lib/db         Prisma client and topic/meeting writes
+/lib/ai         OpenAI extraction and synthesis
+/lib/search     Postgres full-text / ILIKE search
+/lib/youtube    URL parsing and timestamped watch links
+/prisma         Schema, migrations, seed
+```
+
+Search is isolated in `lib/search` so semantic / pgvector search can be added later without rewriting the UI.
+
+## Privacy notes
+
+- Transcripts and meeting content are private internal data.
+- Production logs redact transcripts and secrets.
+- Unlisted YouTube videos are **not** private. Anyone with the link can watch them.
+- Do not paste OpenAI keys or database credentials into client code. This app keeps them on the server.
+
+## License
+
+Private internal software for Ramos James Law.

@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MeetingStatus {
+  DRAFT
+  PROCESSING
+  AWAITING_REVIEW
+  PROCESSED
+  FAILED
+}
+
+enum TopicStatus {
+  APPROVED
+  ARCHIVED
+}
+
+enum CandidateStatus {
+  PENDING
+  APPROVED
+  IGNORED
+}
+
+model Meeting {
+  id              String        @id @default(cuid())
+  title           String
+  meetingDate     DateTime
+  videoUrl        String
+  youtubeVideoId  String
+  transcript      String        @db.Text
+  participants    String[]      @default([])
+  status          MeetingStatus @default(DRAFT)
+  processingError String?       @db.Text
+  processedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  discussions Discussion[]
+  candidates  TopicCandidate[]
+
+  @@index([youtubeVideoId])
+  @@index([status])
+  @@index([meetingDate])
+}
+
+model Topic {
+  id              String      @id @default(cuid())
+  title           String
+  slug            String      @unique
+  normalizedTitle String
+  category        String
+  summary         String      @db.Text
+  keyPoints       Json
+  keywords        Json
+  searchText      String      @db.Text
+  status          TopicStatus @default(APPROVED)
+  lastDiscussedAt DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  discussions  Discussion[]
+  suggestedFor TopicCandidate[] @relation("SuggestedTopic")
+  approvedFrom TopicCandidate[] @relation("ApprovedTopic")
+
+  @@index([category])
+  @@index([status, lastDiscussedAt])
+  @@index([normalizedTitle])
+}
+
+model Discussion {
+  id                String   @id @default(cuid())
+  topicId           String
+  meetingId         String
+  startSeconds      Int
+  endSeconds        Int?
+  sourceSummary     String   @db.Text
+  transcriptExcerpt String   @db.Text
+  speakers          Json
+  createdAt         DateTime @default(now())
+
+  topic   Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([topicId])
+  @@index([meetingId])
+}
+
+model TopicCandidate {
+  id                String          @id @default(cuid())
+  meetingId         String
+  title             String
+  category          String
+  summary           String          @db.Text
+  keyPoints         Json
+  keywords          Json
+  startSeconds      Int
+  endSeconds        Int?
+  speakers          Json
+  transcriptExcerpt String          @db.Text
+  status            CandidateStatus @default(PENDING)
+  suggestedTopicId  String?
+  approvedTopicId   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  meeting        Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  suggestedTopic Topic?  @relation("SuggestedTopic", fields: [suggestedTopicId], references: [id], onDelete: SetNull)
+  approvedTopic  Topic?  @relation("ApprovedTopic", fields: [approvedTopicId], references: [id], onDelete: SetNull)
+
+  @@index([meetingId, status])
+  @@index([status])
+}
