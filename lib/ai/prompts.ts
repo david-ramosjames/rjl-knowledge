@@ -1,11 +1,26 @@
 import { z } from "zod";
 import { DEFAULT_CATEGORIES } from "@/lib/categories";
+import { parseTimestampToSeconds } from "@/lib/youtube";
+
+function toSeconds(value: unknown, fallback: number | null = 0) {
+  if (value == null || value === "") return fallback;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.round(value));
+  }
+  if (typeof value === "string") {
+    const parsed = parseTimestampToSeconds(value);
+    if (parsed !== null) return parsed;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return Math.max(0, Math.round(numeric));
+  }
+  return fallback;
+}
 
 export const extractedDiscussionSchema = z.object({
   title: z.string().min(1),
   category: z.string().min(1),
-  start_seconds: z.number().int().nonnegative().default(0),
-  end_seconds: z.number().int().nonnegative().nullable().optional(),
+  start_seconds: z.preprocess((value) => toSeconds(value, 0), z.number().int().nonnegative()),
+  end_seconds: z.preprocess((value) => toSeconds(value, null), z.number().int().nonnegative().nullable()),
   summary: z.string().min(1),
   key_points: z.array(z.string()),
   speakers: z.array(z.string()).default([]),
@@ -29,7 +44,9 @@ export const synthesisResponseSchema = z.object({
 export function extractionSystemPrompt() {
   return `You extract reusable internal knowledge from Ramos James Law attorney meeting transcripts for the Knowledge Hub.
 
-Meetings are sources. Topics are permanent knowledge objects. Extract only knowledge that would still help an attorney or staff member months from now.
+Meetings are sources. Topics are permanent knowledge objects.
+
+A typical attorney meeting should produce several topics. Return {"discussions": []} ONLY if the transcript is purely greetings, scheduling, coverage, or a to-do list with no legal, medical, insurance, damages, or practice discussion.
 
 Core rules:
 - Document ONLY what the attorneys and staff actually said in this transcript.
@@ -37,24 +54,22 @@ Core rules:
 - Do NOT invent facts, speakers, timestamps, or conclusions.
 - If the transcript has no timestamps, use start_seconds 0 and do not invent times.
 
-KEEP a discussion only if it is lasting, reusable knowledge, such as:
+KEEP a discussion when it includes lasting, reusable knowledge, including:
 - How the firm thinks about a type of legal, medical, insurance, or litigation issue
 - Recurring case theories, objections, pitfalls, or practice standards
-- Principles that would still apply on a different file next month or next year
-- Specific-case talk that illustrates a reusable principle (capture the principle, not the file's weekly status)
+- Intake, case selection, settlement posture, client management, or firm process
+- Specific-file talk that contains a principle — capture the principle, not the client's weekly status
+  Example: "the Garcia file might get dropped because they stopped treating" → "Gaps in Medical Treatment"
 
 DO NOT extract:
-- Action items, to-dos, assignments, or "someone will follow up"
-- Week-to-week status: this week's files, hearings this week, who is covering what
-- One-off logistics for a particular client or file with no reusable principle
-- Scheduling, calendaring, coverage, Zoom/admin issues
-- Small talk, jokes, personal conversation, check-ins, and housekeeping
-- Recaps of last week's tasks or reminders of what still needs to be done
-- Random asides that would not help a future attorney
+- Bare action items with no reasoning ("Ryan will call the client")
+- Week-to-week logistics: who is covering a hearing, this week's calendar
+- Scheduling, Zoom problems, and small talk
+- Recaps of last week's tasks
 
-If a stretch of conversation mixes a useful principle with an action item, keep only the principle. Drop the task list.
+If a stretch of conversation mixes a useful principle with an action item, keep the principle and drop the task list.
 
-Normalize titles so similar discussions can accumulate under one durable topic name later. Example: "gap in treatment", "client stopped treating", and "treatment gaps" should map toward "Gaps in Medical Treatment" rather than overly specific one-off titles. Never title a topic after a single client's weekly update.
+Normalize titles so similar discussions can accumulate under one durable topic name later. Example: "gap in treatment", "client stopped treating", and "treatment gaps" should map toward "Gaps in Medical Treatment". Never title a topic after a single client.
 
 Preferred categories (use one when it fits; otherwise a short new category is allowed):
 ${DEFAULT_CATEGORIES.join(", ")}
@@ -75,10 +90,7 @@ Return JSON with this exact shape:
       "is_lasting_knowledge": true
     }
   ]
-}
-
-Set is_lasting_knowledge to false for anything operational, weekly, or task-like — or omit that discussion entirely.
-If there are no lasting knowledge discussions, return {"discussions": []}.`;
+}`;
 }
 
 export function extractionUserPrompt(input: {
@@ -94,7 +106,30 @@ export function extractionUserPrompt(input: {
 Meeting date: ${input.meetingDate}
 Participants: ${participants}
 
-Extract lasting firm knowledge only. Skip action items, weekly status, assignments, coverage, and one-off file logistics.
+Extract reusable knowledge topics. Prefer several topics over none. Skip only pure logistics and to-do lists.
+
+Timestamped transcript:
+${input.transcript}`;
+}
+
+export function extractionRecoveryUserPrompt(input: {
+  title: string;
+  meetingDate: string;
+  participants: string[];
+  transcript: string;
+}) {
+  const participants =
+    input.participants.length > 0 ? input.participants.join(", ") : "Not provided";
+
+  return `The first pass returned no topics. That is usually too conservative for an attorney meeting.
+
+Meeting title: ${input.title}
+Meeting date: ${input.meetingDate}
+Participants: ${participants}
+
+Re-read the transcript and extract every substantive discussion of legal strategy, medical issues, insurance, damages, intake, settlement, client management, or firm process. Generalize specific-file talk into a durable topic title.
+
+Skip only greetings, jokes, Zoom/admin issues, and bare task lists with no reasoning.
 
 Timestamped transcript:
 ${input.transcript}`;

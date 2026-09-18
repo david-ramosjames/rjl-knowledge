@@ -35,7 +35,7 @@ export function errorMessageFromCode(code: string, fallback?: string): string {
     case ErrorCodes.DATABASE_FAILURE:
       return "A database error occurred. Try again in a moment.";
     case ErrorCodes.NO_TOPICS:
-      return "No lasting knowledge topics were found. Action items, weekly status, and other operational chatter were ignored on purpose.";
+      return "No knowledge topics were found in this transcript.";
     case ErrorCodes.DUPLICATE_PROCESSING:
       return "This meeting or video has already been processed.";
     case ErrorCodes.NOT_FOUND:

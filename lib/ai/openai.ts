@@ -48,6 +48,7 @@ export async function completeJson(messages: { role: "system" | "user"; content:
     const completion = await client.chat.completions.create({
       model: getOpenAIModel(),
       temperature: 0.2,
+      max_tokens: 8192,
       response_format: { type: "json_object" },
       messages,
     });

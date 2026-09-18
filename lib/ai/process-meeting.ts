@@ -1,7 +1,7 @@
 import { DEFAULT_CATEGORIES, normalizeCategory } from "@/lib/categories";
 import { prisma } from "@/lib/db/prisma";
 import { AppError, ErrorCodes } from "@/lib/errors";
-import { logError } from "@/lib/logger";
+import { logError, logInfo } from "@/lib/logger";
 import { excerptForRange, parseTranscript } from "@/lib/transcript/parse";
 import { uniqueStrings } from "@/lib/utils";
 import { findSuggestedTopic } from "@/lib/duplicates";
@@ -13,6 +13,7 @@ import {
 } from "@/lib/ai/openai";
 import { isLastingKnowledge } from "@/lib/ai/lasting-knowledge";
 import {
+  extractionRecoveryUserPrompt,
   extractionResponseSchema,
   extractionSystemPrompt,
   extractionUserPrompt,
@@ -119,7 +120,7 @@ export async function processMeeting(meetingId: string) {
         processedAt: new Date(),
         processingError:
           discussions.length === 0
-            ? "No lasting knowledge topics were found. Action items, weekly status, and other operational chatter were ignored."
+            ? "No knowledge topics were found. If this meeting had legal or practice discussion, retry processing."
             : null,
       },
     });
@@ -156,11 +157,25 @@ async function extractDiscussions(input: {
   participants: string[];
   transcript: string;
 }): Promise<ExtractedDiscussion[]> {
-  const messages = [
-    { role: "system" as const, content: extractionSystemPrompt() },
-    { role: "user" as const, content: extractionUserPrompt(input) },
-  ];
+  const firstPass = await runExtraction([
+    { role: "system", content: extractionSystemPrompt() },
+    { role: "user", content: extractionUserPrompt(input) },
+  ]);
 
+  if (firstPass.length > 0) {
+    logInfo("Extracted meeting topics", { count: firstPass.length, pass: "primary" });
+    return firstPass;
+  }
+
+  const recovery = await runExtraction([
+    { role: "system", content: extractionSystemPrompt() },
+    { role: "user", content: extractionRecoveryUserPrompt(input) },
+  ]);
+  logInfo("Extracted meeting topics", { count: recovery.length, pass: "recovery" });
+  return recovery;
+}
+
+async function runExtraction(messages: { role: "system" | "user"; content: string }[]) {
   let parsedUnknown: unknown;
   try {
     parsedUnknown = await completeJson(messages);

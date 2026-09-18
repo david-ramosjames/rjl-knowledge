@@ -39,7 +39,7 @@ export default async function ReviewMeetingPage({
         <div className="mt-8 rounded-xl border border-dashed border-border px-5 py-8 text-sm text-muted-foreground">
           <p>
             {meeting.processingError ||
-              "No lasting knowledge topics were found. Action items, weekly status, and other operational chatter were ignored on purpose."}
+              "No knowledge topics were found. If this meeting had legal or practice discussion, retry processing."}
           </p>
           <div className="mt-4">
             <RetryProcessButton meetingId={meeting.id} />
