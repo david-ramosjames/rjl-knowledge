@@ -127,43 +127,48 @@ The seed video is a public placeholder (`Big Buck Bunny`) so timestamp links wor
 
 ## Railway Postgres
 
-1. Create a Railway project.
-2. Add a **PostgreSQL** plugin/service.
-3. Copy the Postgres `DATABASE_URL` from the database service variables.
-4. Create a second service for this Next.js app from the GitHub repo or Railway CLI.
+You need **two services** in the same Railway project:
 
-Railway’s default Postgres URL is enough for this MVP. If you later put a pooler in front of Postgres, keep:
+1. PostgreSQL
+2. This Next.js app
 
-- `DATABASE_URL` for the app runtime
-- A direct URL for Prisma migrations, if the pooler cannot run migrations
+Postgres gets `DATABASE_URL` automatically. The **app service does not**. Share it, or the app cannot reach the database.
 
-For this project, `prisma.config.ts` and the app both read `DATABASE_URL`.
+### Connecting DATABASE_URL to the app service
 
-## Connecting DATABASE_URL
+In Railway:
 
-In the Next.js service on Railway, add:
-
-```text
-DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require
-```
-
-Use the value Railway provides. Do not commit it.
-
-Then run migrations. This repo’s `railway.json` start command is:
+1. Open the **app** service (not the Postgres service).
+2. Go to **Variables**.
+3. Add a variable reference:
 
 ```text
-npx prisma migrate deploy && npm run start
+DATABASE_URL=${{Postgres.DATABASE_URL}}
 ```
 
-That applies migrations on each deploy before the app boots.
+Use Railway’s variable picker if the Postgres service is not named `Postgres`. It will insert the correct reference.
 
-To load demo content on Railway after the first successful deploy:
+Do **not** paste a `localhost` URL. The app container cannot reach Postgres on localhost.
+
+`DATABASE_PRIVATE_URL` is also accepted if you prefer Railway’s private network URL.
+
+Then redeploy the app service. Migrations run on boot via:
+
+```text
+npm run start:migrate
+```
+
+To load demo content after the first successful deploy:
 
 ```bash
 railway run npm run db:seed
 ```
 
 or use Railway’s one-off command / shell against the app service.
+
+### `Can't reach database server at localhost:5432`
+
+The app service is missing the Railway Postgres URL. Add the `DATABASE_URL` reference above, then redeploy.
 
 ## Adding OPENAI_API_KEY
 
@@ -185,7 +190,7 @@ AUTH_SECRET=another-long-random-string
 
 1. Push this repository to GitHub (or deploy from the local directory with the Railway CLI).
 2. In Railway, **New Service → GitHub Repo** (or `railway up`).
-3. Attach / share the Postgres `DATABASE_URL` variable with the app service.
+3. Attach / share the Postgres `DATABASE_URL` variable with the **app** service using a Railway variable reference. Do not leave it only on the Postgres service.
 4. Add `OPENAI_API_KEY`.
 5. Add `AUTH_PASSWORD` if you want the hub locked.
 6. Deploy. Nixpacks is configured to use Node 22.
