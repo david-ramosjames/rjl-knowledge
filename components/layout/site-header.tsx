@@ -37,6 +37,9 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
               <Button asChild variant={variant === "admin" ? "secondary" : "ghost"} size="sm">
                 <Link href="/admin">Admin</Link>
               </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/admin/topics">Topics</Link>
+              </Button>
               {authEnabled ? (
                 <form action={logoutAction} className="flex items-center gap-2">
                   {user?.email ? (

@@ -241,3 +241,34 @@ export async function getTopicBySlug(slug: string) {
     },
   });
 }
+
+export async function listTopicsForAdmin() {
+  return prisma.topic.findMany({
+    where: { status: TopicStatus.APPROVED },
+    include: {
+      _count: { select: { discussions: true } },
+    },
+    orderBy: [{ lastDiscussedAt: "desc" }, { updatedAt: "desc" }, { title: "asc" }],
+  });
+}
+
+export async function deleteTopic(topicId: string) {
+  const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+  if (!topic) {
+    throw new AppError(ErrorCodes.NOT_FOUND, "Topic not found.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.topicCandidate.updateMany({
+      where: { approvedTopicId: topic.id },
+      data: { status: CandidateStatus.IGNORED, approvedTopicId: null },
+    });
+    await tx.topicCandidate.updateMany({
+      where: { suggestedTopicId: topic.id },
+      data: { suggestedTopicId: null },
+    });
+    await tx.topic.delete({ where: { id: topic.id } });
+  });
+
+  return topic;
+}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DeleteTopicButton } from "@/components/admin/delete-topic-button";
 import { Badge } from "@/components/ui/badge";
 import { DiscussionCard } from "@/components/topics/discussion-card";
 import { getTopicBySlug } from "@/lib/db/topics";
@@ -36,10 +37,13 @@ export default async function TopicPage({
       <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
         ← Knowledge Hub
       </Link>
-      <div className="mt-6">
-        <Badge className="bg-white">{topic.category}</Badge>
-        <h1 className="mt-4 font-serif text-4xl leading-tight tracking-tight sm:text-5xl">{topic.title}</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Updated {formatDate(lastUpdated)}</p>
+      <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Badge className="bg-white">{topic.category}</Badge>
+          <h1 className="mt-4 font-serif text-4xl leading-tight tracking-tight sm:text-5xl">{topic.title}</h1>
+          <p className="mt-3 text-sm text-muted-foreground">Updated {formatDate(lastUpdated)}</p>
+        </div>
+        <DeleteTopicButton topicId={topic.id} title={topic.title} />
       </div>
 
       <section className="mt-10">

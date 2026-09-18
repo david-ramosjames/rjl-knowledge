@@ -51,6 +51,16 @@ export function timestampedYouTubeUrl(videoId: string, startSeconds: number): st
   return `https://www.youtube.com/watch?v=${videoId}&t=${seconds}s`;
 }
 
+export function youtubeEmbedUrl(videoId: string, startSeconds = 0): string {
+  const seconds = Math.max(0, Math.floor(startSeconds));
+  const params = new URLSearchParams({
+    start: String(seconds),
+    rel: "0",
+    modestbranding: "1",
+  });
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+}
+
 export function formatTimestamp(totalSeconds: number): string {
   const safe = Math.max(0, Math.floor(totalSeconds));
   const hours = Math.floor(safe / 3600);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getAdminStats } from "@/lib/db/meetings";
@@ -37,12 +37,20 @@ export default async function AdminPage() {
             into the Knowledge Hub.
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link href="/admin/meetings/new">
-            <Plus className="size-4" />
-            Add Meeting
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild size="lg">
+            <Link href="/admin/meetings/new">
+              <Plus className="size-4" />
+              Add Meeting
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/admin/topics">
+              <BookOpen className="size-4" />
+              Manage topics
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">

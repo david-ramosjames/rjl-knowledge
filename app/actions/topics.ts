@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect, unstable_rethrow } from "next/navigation";
 import {
   addCandidateToExistingTopic,
   createTopicFromCandidate,
+  deleteTopic,
   ignoreCandidate,
   updateCandidate,
 } from "@/lib/db/topics";
@@ -111,4 +113,25 @@ export async function ignoreCandidateAction(formData: FormData) {
       error: error instanceof AppError ? error.message : "Could not ignore this topic.",
     };
   }
+}
+
+export async function deleteTopicAction(formData: FormData) {
+  const topicId = String(formData.get("topicId") ?? "").trim();
+  if (!topicId) redirect("/admin/topics");
+
+  let slug = "";
+  try {
+    const topic = await deleteTopic(topicId);
+    slug = topic.slug;
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect("/admin/topics?error=delete");
+  }
+
+  revalidatePath("/");
+  revalidatePath("/search");
+  revalidatePath("/admin");
+  revalidatePath("/admin/topics");
+  if (slug) revalidatePath(`/topics/${slug}`);
+  redirect("/admin/topics");
 }

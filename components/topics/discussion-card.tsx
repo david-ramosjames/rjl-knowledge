@@ -1,9 +1,8 @@
-import { FileText, Play } from "lucide-react";
+import { FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { asStringArray, namedSpeakers, formatDate } from "@/lib/utils";
-import { formatTimestamp, timestampedYouTubeUrl } from "@/lib/youtube";
+import { formatTimestamp, youtubeEmbedUrl } from "@/lib/youtube";
 
 export function DiscussionCard({
   meetingTitle,
@@ -23,8 +22,8 @@ export function DiscussionCard({
   startSeconds: number;
 }) {
   const speakerList = namedSpeakers(asStringArray(speakers));
-  const watchUrl = youtubeVideoId ? timestampedYouTubeUrl(youtubeVideoId, startSeconds) : null;
-  const showTimestamp = Boolean(watchUrl) || startSeconds > 0;
+  const embedUrl = youtubeVideoId ? youtubeEmbedUrl(youtubeVideoId, startSeconds) : null;
+  const showTimestamp = Boolean(embedUrl) || startSeconds > 0;
 
   return (
     <Card className="p-6">
@@ -36,17 +35,23 @@ export function DiscussionCard({
             <p className="mt-1 text-sm text-muted-foreground">{speakerList.join(", ")}</p>
           ) : null}
         </div>
-        <Badge className="bg-white">{watchUrl ? "Source discussion" : "Transcript source"}</Badge>
+        <Badge className="bg-white">{embedUrl ? "Source discussion" : "Transcript source"}</Badge>
       </div>
       <p className="mt-4 text-sm leading-7 text-foreground/90">{sourceSummary}</p>
-      {watchUrl ? (
-        <div className="mt-5">
-          <Button asChild>
-            <a href={watchUrl} target="_blank" rel="noreferrer">
-              <Play className="size-4" />
-              Watch discussion at {formatTimestamp(startSeconds)}
-            </a>
-          </Button>
+      {embedUrl ? (
+        <div className="mt-5 overflow-hidden rounded-xl border border-border bg-black">
+          <div className="relative aspect-video">
+            <iframe
+              src={embedUrl}
+              title={`${meetingTitle} at ${formatTimestamp(startSeconds)}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full"
+            />
+          </div>
+          <p className="bg-primary px-4 py-2 text-xs text-primary-foreground">
+            Starts at {formatTimestamp(startSeconds)}. Click play to watch this part of the meeting.
+          </p>
         </div>
       ) : showTimestamp ? (
         <p className="mt-5 inline-flex items-center gap-2 text-sm text-muted-foreground">
