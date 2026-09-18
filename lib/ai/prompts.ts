@@ -46,30 +46,37 @@ export function extractionSystemPrompt() {
 
 Meetings are sources. Topics are permanent knowledge objects.
 
-A typical attorney meeting should produce several topics. Return {"discussions": []} ONLY if the transcript is purely greetings, scheduling, coverage, or a to-do list with no legal, medical, insurance, damages, or practice discussion.
+These meetings are practice-knowledge discussions. They are NEVER used to identify, name, or classify a specific client case. Do not try to figure out which file a remark belongs to.
+
+A typical 30–60 minute attorney meeting should produce many topics, often 8–20. Split every distinct reusable issue into its own topic. Do not collapse an entire meeting into a handful of buckets. Return {"discussions": []} ONLY if the transcript is purely greetings, scheduling, coverage, or a to-do list with no legal, medical, insurance, damages, or practice discussion.
 
 Core rules:
 - Document ONLY what the attorneys and staff actually said in this transcript.
 - Do NOT add outside legal knowledge, statutes, case law, medical theories, or advice that was not discussed.
 - Do NOT invent facts, speakers, timestamps, or conclusions.
 - If the transcript has no timestamps, use start_seconds 0 and do not invent times.
+- NEVER name a client, case caption, or file number.
+- NEVER use placeholders such as "Unidentified", "Unknown case", "Unknown client", or "Unidentified speaker".
+- Category is a practice area, never a case or client label. If unsure, use Other.
+- Speakers must be real people named in the transcript or participant list. If a transcript labels someone Unidentified, omit speakers for that topic.
 
 KEEP a discussion when it includes lasting, reusable knowledge, including:
 - How the firm thinks about a type of legal, medical, insurance, or litigation issue
-- Recurring case theories, objections, pitfalls, or practice standards
+- Recurring theories, objections, pitfalls, or practice standards
 - Intake, case selection, settlement posture, client management, or firm process
-- Specific-file talk that contains a principle — capture the principle, not the client's weekly status
-  Example: "the Garcia file might get dropped because they stopped treating" → "Gaps in Medical Treatment"
+- Talk that happens to mention a file but contains a principle — capture the principle only
+  Example: "that file might get dropped because they stopped treating" → "Gaps in Medical Treatment"
 
 DO NOT extract:
 - Bare action items with no reasoning ("Ryan will call the client")
 - Week-to-week logistics: who is covering a hearing, this week's calendar
 - Scheduling, Zoom problems, and small talk
 - Recaps of last week's tasks
+- Anything whose value depends on identifying a specific case
 
 If a stretch of conversation mixes a useful principle with an action item, keep the principle and drop the task list.
 
-Normalize titles so similar discussions can accumulate under one durable topic name later. Example: "gap in treatment", "client stopped treating", and "treatment gaps" should map toward "Gaps in Medical Treatment". Never title a topic after a single client.
+Normalize titles so similar discussions can accumulate under one durable topic name later. Example: "gap in treatment", "client stopped treating", and "treatment gaps" should map toward "Gaps in Medical Treatment". Never title a topic after a client or as Unidentified.
 
 Preferred categories (use one when it fits; otherwise a short new category is allowed):
 ${DEFAULT_CATEGORIES.join(", ")}
@@ -106,7 +113,7 @@ export function extractionUserPrompt(input: {
 Meeting date: ${input.meetingDate}
 Participants: ${participants}
 
-Extract reusable knowledge topics. Prefer several topics over none. Skip only pure logistics and to-do lists.
+Extract reusable practice-knowledge topics. Split distinct issues. Prefer many topics over a few large ones. Do not classify or name specific cases. Skip only pure logistics and to-do lists.
 
 Timestamped transcript:
 ${input.transcript}`;
@@ -127,9 +134,37 @@ Meeting title: ${input.title}
 Meeting date: ${input.meetingDate}
 Participants: ${participants}
 
-Re-read the transcript and extract every substantive discussion of legal strategy, medical issues, insurance, damages, intake, settlement, client management, or firm process. Generalize specific-file talk into a durable topic title.
+Re-read the transcript and extract every substantive discussion of legal strategy, medical issues, insurance, damages, intake, settlement, client management, or firm process. Turn file-specific talk into a durable practice topic. Do not name or classify specific cases. Do not use Unidentified.
 
 Skip only greetings, jokes, Zoom/admin issues, and bare task lists with no reasoning.
+
+Timestamped transcript:
+${input.transcript}`;
+}
+
+export function extractionExpansionUserPrompt(
+  input: {
+    title: string;
+    meetingDate: string;
+    participants: string[];
+    transcript: string;
+  },
+  existingTitles: string[],
+) {
+  const participants =
+    input.participants.length > 0 ? input.participants.join(", ") : "Not provided";
+  const alreadyFound = existingTitles.map((title) => `- ${title}`).join("\n");
+
+  return `The first pass only found ${existingTitles.length} topic(s). That is too few for an attorney meeting. Find ADDITIONAL distinct practice-knowledge topics that were discussed but are not listed below.
+
+Already extracted:
+${alreadyFound || "- (none)"}
+
+Meeting title: ${input.title}
+Meeting date: ${input.meetingDate}
+Participants: ${participants}
+
+Do not repeat the titles above. Do not name or classify specific cases. Do not use Unidentified. Skip greetings, jokes, Zoom/admin issues, and bare task lists.
 
 Timestamped transcript:
 ${input.transcript}`;

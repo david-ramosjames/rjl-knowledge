@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_CATEGORIES } from "@/lib/categories";
-import { asStringArray } from "@/lib/utils";
+import { asStringArray, namedSpeakers } from "@/lib/utils";
 import { formatTimestamp } from "@/lib/youtube";
 
 type SuggestedTopic = {
@@ -46,7 +46,7 @@ export function CandidateCard({ candidate, meetingId }: { candidate: Candidate; 
   const [error, setError] = useState<string | null>(null);
   const keyPoints = asStringArray(candidate.keyPoints);
   const keywords = asStringArray(candidate.keywords);
-  const speakers = asStringArray(candidate.speakers);
+  const speakers = namedSpeakers(asStringArray(candidate.speakers));
   const disabled = candidate.status !== "PENDING";
 
   async function runAction(action: (formData: FormData) => Promise<{ ok: boolean; error?: string }>, formData: FormData) {

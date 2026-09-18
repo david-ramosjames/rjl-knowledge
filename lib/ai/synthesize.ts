@@ -2,7 +2,7 @@ import { completeJson } from "@/lib/ai/openai";
 import { synthesisSystemPrompt, synthesisResponseSchema } from "@/lib/ai/prompts";
 import { prisma } from "@/lib/db/prisma";
 import { logError } from "@/lib/logger";
-import { asStringArray, buildSearchText, uniqueStrings } from "@/lib/utils";
+import { asStringArray, buildSearchText, namedSpeakers, uniqueStrings } from "@/lib/utils";
 
 export async function synthesizeTopicFromDiscussions(topicId: string) {
   const topic = await prisma.topic.findUnique({
@@ -21,11 +21,10 @@ export async function synthesizeTopicFromDiscussions(topicId: string) {
   const existingKeywords = asStringArray(topic.keywords);
 
   const discussionBlocks = topic.discussions.map((discussion, index) => {
-    const speakers = asStringArray(discussion.speakers).join(", ") || "Unknown";
+    const speakers = namedSpeakers(asStringArray(discussion.speakers)).join(", ");
     return `Source ${index + 1}
 Meeting: ${discussion.meeting.title} (${discussion.meeting.meetingDate.toISOString().slice(0, 10)})
-Speakers: ${speakers}
-Source summary: ${discussion.sourceSummary}
+${speakers ? `Speakers: ${speakers}\n` : ""}Source summary: ${discussion.sourceSummary}
 Excerpt: ${discussion.transcriptExcerpt}`;
   });
 

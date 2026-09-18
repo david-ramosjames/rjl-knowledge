@@ -1,6 +1,6 @@
 import { MeetingForm } from "@/components/admin/meeting-form";
 
-export const maxDuration = 120;
+export const maxDuration = 180;
 export const dynamic = "force-dynamic";
 
 export default async function NewMeetingPage({

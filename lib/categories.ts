@@ -40,6 +40,11 @@ const CATEGORY_ALIASES: Record<string, DefaultCategory> = {
   "firm process": "Firm Process",
   operations: "Firm Process",
   other: "Other",
+  unidentified: "Other",
+  unknown: "Other",
+  unspecified: "Other",
+  none: "Other",
+  "n/a": "Other",
 };
 
 export function normalizeCategory(input: string | null | undefined): string {

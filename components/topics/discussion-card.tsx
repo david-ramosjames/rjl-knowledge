@@ -2,7 +2,7 @@ import { FileText, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { asStringArray, formatDate } from "@/lib/utils";
+import { asStringArray, namedSpeakers, formatDate } from "@/lib/utils";
 import { formatTimestamp, timestampedYouTubeUrl } from "@/lib/youtube";
 
 export function DiscussionCard({
@@ -22,7 +22,7 @@ export function DiscussionCard({
   youtubeVideoId: string | null;
   startSeconds: number;
 }) {
-  const speakerList = asStringArray(speakers);
+  const speakerList = namedSpeakers(asStringArray(speakers));
   const watchUrl = youtubeVideoId ? timestampedYouTubeUrl(youtubeVideoId, startSeconds) : null;
   const showTimestamp = Boolean(watchUrl) || startSeconds > 0;
 

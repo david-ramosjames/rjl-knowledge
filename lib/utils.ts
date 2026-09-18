@@ -24,6 +24,13 @@ export function uniqueStrings(values: string[]): string[] {
   return result;
 }
 
+const PLACEHOLDER_SPEAKER =
+  /^(unidentified(?:\s+speaker)?|unknown(?:\s+speaker)?|speaker\s*\d+|participant\s*\d+|guest|you|n\/?a|none)$/i;
+
+export function namedSpeakers(values: string[]): string[] {
+  return uniqueStrings(values).filter((name) => !PLACEHOLDER_SPEAKER.test(name));
+}
+
 export function parseParticipants(input: string | null | undefined): string[] {
   if (!input) return [];
   return uniqueStrings(input.split(/[,;\n]/));

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { AppError, ErrorCodes } from "@/lib/errors";
 import { logError, logInfo } from "@/lib/logger";
 import { excerptForRange, parseTranscript } from "@/lib/transcript/parse";
-import { uniqueStrings } from "@/lib/utils";
+import { namedSpeakers, normalizeTitle, uniqueStrings } from "@/lib/utils";
 import { findSuggestedTopic } from "@/lib/duplicates";
 import {
   completeJson,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/ai/openai";
 import { isLastingKnowledge } from "@/lib/ai/lasting-knowledge";
 import {
+  extractionExpansionUserPrompt,
   extractionRecoveryUserPrompt,
   extractionResponseSchema,
   extractionSystemPrompt,
@@ -120,7 +121,7 @@ export async function processMeeting(meetingId: string, options?: { force?: bool
           keywords,
           startSeconds,
           endSeconds,
-          speakers: uniqueStrings(discussion.speakers.length ? discussion.speakers : meeting.participants),
+          speakers: namedSpeakers(discussion.speakers.length ? discussion.speakers : meeting.participants),
           transcriptExcerpt: excerpt,
           suggestedTopicId: suggested?.id ?? null,
         },
@@ -176,17 +177,30 @@ async function extractDiscussions(input: {
     { role: "user", content: extractionUserPrompt(input) },
   ]);
 
-  if (firstPass.length > 0) {
+  if (firstPass.length >= 8) {
     logInfo("Extracted meeting topics", { count: firstPass.length, pass: "primary" });
     return firstPass;
   }
 
-  const recovery = await runExtraction([
+  const followUpPrompt =
+    firstPass.length === 0
+      ? extractionRecoveryUserPrompt(input)
+      : extractionExpansionUserPrompt(
+          input,
+          firstPass.map((discussion) => discussion.title),
+        );
+  const followUp = await runExtraction([
     { role: "system", content: extractionSystemPrompt() },
-    { role: "user", content: extractionRecoveryUserPrompt(input) },
+    { role: "user", content: followUpPrompt },
   ]);
-  logInfo("Extracted meeting topics", { count: recovery.length, pass: "recovery" });
-  return recovery;
+  const merged = mergeDiscussions(firstPass, followUp);
+  logInfo("Extracted meeting topics", {
+    count: merged.length,
+    pass: firstPass.length === 0 ? "recovery" : "expansion",
+    primaryCount: firstPass.length,
+    followUpCount: followUp.length,
+  });
+  return merged;
 }
 
 async function runExtraction(messages: { role: "system" | "user"; content: string }[]) {
@@ -215,12 +229,24 @@ async function runExtraction(messages: { role: "system" | "user"; content: strin
       category: normalizeExtractedCategory(discussion.category),
       key_points: uniqueStrings(discussion.key_points).slice(0, 8),
       keywords: uniqueStrings(discussion.keywords).slice(0, 12),
-      speakers: uniqueStrings(discussion.speakers),
+      speakers: namedSpeakers(discussion.speakers),
     }))
     .filter((discussion) => discussion.title.trim() && discussion.summary.trim() && isLastingKnowledge(discussion));
 
   logInfo("OpenAI topic extraction result", { rawCount, keptCount: kept.length });
   return kept;
+}
+
+function mergeDiscussions(primary: ExtractedDiscussion[], extra: ExtractedDiscussion[]) {
+  const merged: ExtractedDiscussion[] = [];
+  const seen = new Set<string>();
+  for (const discussion of [...primary, ...extra]) {
+    const key = normalizeTitle(discussion.title);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(discussion);
+  }
+  return merged;
 }
 
 function normalizeExtractedCategory(category: string) {

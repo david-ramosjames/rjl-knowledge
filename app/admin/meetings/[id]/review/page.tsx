@@ -5,7 +5,7 @@ import { RetryProcessButton } from "@/components/admin/retry-process-button";
 import { getMeetingForReview } from "@/lib/db/meetings";
 import { formatDate } from "@/lib/utils";
 
-export const maxDuration = 120;
+export const maxDuration = 180;
 export const dynamic = "force-dynamic";
 
 export default async function ReviewMeetingPage({
