@@ -4,7 +4,8 @@ import {
   exchangeGoogleCode,
   fetchGoogleProfile,
   googleCallbackUri,
-  publicOrigin,
+  originRedirect,
+  resolveAppOrigin,
 } from "@/lib/auth/google";
 import {
   OAUTH_COOKIE,
@@ -15,8 +16,9 @@ import {
 } from "@/lib/auth/session";
 import { logError } from "@/lib/logger";
 
-function fail(request: NextRequest, code: string) {
-  const response = NextResponse.redirect(new URL(`/login?error=${code}`, request.url));
+function fail(request: NextRequest, code: string, origin?: string) {
+  const target = originRedirect(resolveAppOrigin(request, origin), `/login?error=${code}`);
+  const response = NextResponse.redirect(target);
   response.cookies.delete(OAUTH_COOKIE);
   return response;
 }
@@ -30,11 +32,12 @@ export async function GET(request: NextRequest) {
   const oauth = readOAuthStateToken(request.cookies.get(OAUTH_COOKIE)?.value);
 
   if (!code || !state || !oauth || oauth.state !== state) {
-    return fail(request, "state");
+    return fail(request, "state", oauth?.origin);
   }
 
+  const origin = resolveAppOrigin(request, oauth.origin);
+
   try {
-    const origin = publicOrigin(request);
     const accessToken = await exchangeGoogleCode({
       code,
       redirectUri: googleCallbackUri(origin),
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
     const profile = await fetchGoogleProfile(accessToken);
     assertGoogleUserAllowed(profile.email);
 
-    const response = NextResponse.redirect(new URL(oauth.next || "/", request.url));
+    const response = NextResponse.redirect(originRedirect(origin, oauth.next || "/"));
     response.cookies.delete(OAUTH_COOKIE);
     response.cookies.set(
       SESSION_COOKIE,
@@ -61,8 +64,8 @@ export async function GET(request: NextRequest) {
       code: error instanceof Error ? error.name : "UNKNOWN",
     });
     const message = error instanceof Error ? error.message : "";
-    if (message.includes("not allowed")) return fail(request, "forbidden");
-    if (message.includes("not verified") || message.includes("missing")) return fail(request, "unverified");
-    return fail(request, "oauth");
+    if (message.includes("not allowed")) return fail(request, "forbidden", origin);
+    if (message.includes("not verified") || message.includes("missing")) return fail(request, "unverified", origin);
+    return fail(request, "oauth", origin);
   }
 }

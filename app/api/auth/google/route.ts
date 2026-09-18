@@ -5,7 +5,8 @@ import {
   getGoogleCredentials,
   googleAuthorizationUrl,
   googleCallbackUri,
-  publicOrigin,
+  originRedirect,
+  resolveAppOrigin,
   safeNextPath,
 } from "@/lib/auth/google";
 import {
@@ -17,11 +18,11 @@ import {
 
 export function GET(request: NextRequest) {
   if (!isGoogleAuthEnabled()) {
-    return NextResponse.redirect(new URL("/login?error=config", request.url));
+    return NextResponse.redirect(originRedirect(resolveAppOrigin(request), "/login?error=config"));
   }
 
   const { clientId } = getGoogleCredentials();
-  const origin = publicOrigin(request);
+  const origin = resolveAppOrigin(request);
   const { verifier, challenge } = createPkcePair();
   const state = createOAuthState();
   const next = safeNextPath(request.nextUrl.searchParams.get("next"));
@@ -36,7 +37,7 @@ export function GET(request: NextRequest) {
   const response = NextResponse.redirect(authorizeUrl);
   response.cookies.set(
     OAUTH_COOKIE,
-    createOAuthStateToken({ state, verifier, next }),
+    createOAuthStateToken({ state, verifier, next, origin }),
     oauthCookieOptions(),
   );
   return response;

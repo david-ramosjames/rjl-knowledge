@@ -74,7 +74,12 @@ export function readUserSession(token: string | undefined | null): SessionUser |
   return user;
 }
 
-export function createOAuthStateToken(payload: { state: string; verifier: string; next: string }) {
+export function createOAuthStateToken(payload: {
+  state: string;
+  verifier: string;
+  next: string;
+  origin: string;
+}) {
   return encodePayload({
     ...payload,
     exp: Math.floor(Date.now() / 1000) + 60 * 10,
@@ -82,7 +87,13 @@ export function createOAuthStateToken(payload: { state: string; verifier: string
 }
 
 export function readOAuthStateToken(token: string | undefined | null) {
-  const payload = decodePayload<{ state: string; verifier: string; next: string; exp: number }>(token);
+  const payload = decodePayload<{
+    state: string;
+    verifier: string;
+    next: string;
+    origin?: string;
+    exp: number;
+  }>(token);
   if (!payload?.state || !payload.verifier || payload.exp < Math.floor(Date.now() / 1000)) {
     return null;
   }

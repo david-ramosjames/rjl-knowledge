@@ -129,20 +129,83 @@ export function assertGoogleUserAllowed(email: string) {
   );
 }
 
-export function publicOrigin(request: Request) {
-  const configured = process.env.AUTH_URL?.trim().replace(/\/$/, "");
-  if (configured) return configured.replace(/^http:\/\//i, "https://");
+function isLoopbackHost(host: string) {
+  const hostname = host.replace(/^\[|\]$/g, "").replace(/:\d+$/, "").toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
 
-  const railwayHost = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
-  if (railwayHost) return `https://${railwayHost.replace(/^https?:\/\//, "")}`;
+function stripOrigin(value: string) {
+  return value.trim().replace(/\/$/, "");
+}
+
+function hostFromOrigin(value: string) {
+  return value.replace(/^https?:\/\//i, "").split("/")[0] ?? "";
+}
+
+function isRailwayRuntime() {
+  return Boolean(
+    process.env.RAILWAY_ENVIRONMENT ||
+      process.env.RAILWAY_PUBLIC_DOMAIN ||
+      process.env.RAILWAY_STATIC_URL,
+  );
+}
+
+export function publicOrigin(request: Request) {
+  const railwayStatic = process.env.RAILWAY_STATIC_URL?.trim();
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
+  const configured = process.env.AUTH_URL?.trim();
+
+  if (configured) {
+    const origin = stripOrigin(configured);
+    if (!(isRailwayRuntime() && isLoopbackHost(hostFromOrigin(origin)))) {
+      return isLoopbackHost(hostFromOrigin(origin))
+        ? origin
+        : origin.replace(/^http:\/\//i, "https://");
+    }
+  }
+
+  if (railwayStatic) {
+    return stripOrigin(railwayStatic).replace(/^http:\/\//i, "https://");
+  }
+  if (railwayDomain) {
+    return `https://${railwayDomain.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+  }
 
   const url = new URL(request.url);
-  const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host;
-  const host = forwardedHost.split(",")[0]?.trim() || url.host;
-  const isLocal = host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const candidates = [
+    request.headers.get("x-forwarded-host")?.split(",")[0]?.trim(),
+    request.headers.get("host")?.split(",")[0]?.trim(),
+    url.host,
+  ].filter((value): value is string => Boolean(value));
+
+  const host =
+    candidates.find((candidate) => !isLoopbackHost(candidate)) ||
+    (!isRailwayRuntime() ? candidates[0] : undefined);
+
+  if (!host) {
+    throw new Error(
+      "Could not determine the public app URL. Set AUTH_URL=https://rjl-knowledge-production.up.railway.app on the Railway app service.",
+    );
+  }
+
+  const isLocal = isLoopbackHost(host);
   const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
   const proto = isLocal ? forwardedProto || url.protocol.replace(":", "") || "http" : "https";
   return `${proto}://${host}`;
+}
+
+export function originRedirect(origin: string, path: string) {
+  return new URL(path, `${origin}/`);
+}
+
+export function resolveAppOrigin(request: Request, stored?: string) {
+  if (stored) {
+    const origin = stripOrigin(stored);
+    if (!(isRailwayRuntime() && isLoopbackHost(hostFromOrigin(origin)))) {
+      return origin;
+    }
+  }
+  return publicOrigin(request);
 }
 
 export function googleCallbackUri(origin: string) {
