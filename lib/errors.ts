@@ -1,12 +1,29 @@
 export class AppError extends Error {
   readonly code: string;
   readonly status: number;
+  readonly details?: { meetingId?: string };
 
-  constructor(code: string, message: string, status = 400) {
+  constructor(code: string, message: string, status = 400, details?: { meetingId?: string }) {
     super(message);
     this.name = "AppError";
     this.code = code;
     this.status = status;
+    this.details = details;
+  }
+}
+
+export function errorCodeOf(error: unknown): string | undefined {
+  if (error instanceof AppError) return error.code;
+  if (error && typeof error === "object" && "code" in error && typeof error.code === "string") {
+    return error.code;
+  }
+}
+
+export function errorMeetingIdOf(error: unknown): string | undefined {
+  if (error instanceof AppError) return error.details?.meetingId;
+  if (error && typeof error === "object" && "details" in error) {
+    const details = (error as { details?: { meetingId?: unknown } }).details;
+    return typeof details?.meetingId === "string" ? details.meetingId : undefined;
   }
 }
 
@@ -37,7 +54,7 @@ export function errorMessageFromCode(code: string, fallback?: string): string {
     case ErrorCodes.NO_TOPICS:
       return "No knowledge topics were found in this transcript.";
     case ErrorCodes.DUPLICATE_PROCESSING:
-      return "This meeting or video has already been processed.";
+      return "This meeting is already in the hub. Open it to review topics or retry processing.";
     case ErrorCodes.NOT_FOUND:
       return "We could not find that record.";
     default:

@@ -67,7 +67,9 @@ export async function createMeetingRecord(input: {
     if (existing) {
       throw new AppError(
         ErrorCodes.DUPLICATE_PROCESSING,
-        `This YouTube video was already processed as “${existing.title}”. Open that meeting instead of creating a duplicate.`,
+        `This YouTube video is already in the hub as “${existing.title}”.`,
+        409,
+        { meetingId: existing.id },
       );
     }
   }

@@ -33,18 +33,21 @@ export async function processMeeting(meetingId: string, options?: { force?: bool
     throw new AppError(ErrorCodes.NOT_FOUND, "Meeting not found.", 404);
   }
 
+  const force = Boolean(options?.force);
   const approvedOrPending = meeting.candidates.filter(
     (candidate) => candidate.status === CandidateStatus.PENDING || candidate.status === CandidateStatus.APPROVED,
   );
 
-  if (!options?.force && approvedOrPending.length > 0 && meeting.status !== MeetingStatus.FAILED) {
+  if (!force && approvedOrPending.length > 0 && meeting.status !== MeetingStatus.FAILED) {
     throw new AppError(
       ErrorCodes.DUPLICATE_PROCESSING,
       "This meeting already has extracted topics. Open the review screen instead of processing it again.",
+      409,
+      { meetingId: meeting.id },
     );
   }
 
-  if (options?.force) {
+  if (force) {
     await prisma.topicCandidate.deleteMany({
       where: { meetingId: meeting.id, status: CandidateStatus.PENDING },
     });
@@ -66,7 +69,7 @@ export async function processMeeting(meetingId: string, options?: { force?: bool
     logInfo("Sending meeting transcript to OpenAI", {
       meetingId: meeting.id,
       transcriptChars: meeting.transcript.length,
-      force: Boolean(options?.force),
+      force,
     });
     const discussions = await extractDiscussions({
       title: meeting.title,

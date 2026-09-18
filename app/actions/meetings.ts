@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { processMeeting } from "@/lib/ai/process-meeting";
 import { createMeetingRecord } from "@/lib/db/meetings";
-import { AppError, ErrorCodes } from "@/lib/errors";
+import { errorCodeOf, errorMeetingIdOf, ErrorCodes } from "@/lib/errors";
 import { parseParticipants } from "@/lib/utils";
 
 function meetingErrorRedirect(code: string, extra?: Record<string, string>) {
@@ -27,6 +27,9 @@ export async function createAndProcessMeetingAction(formData: FormData) {
   if (Number.isNaN(meetingDate.getTime())) meetingErrorRedirect(ErrorCodes.VALIDATION);
 
   let meetingId = "";
+  let createError: string | null = null;
+  let existingMeetingId: string | null = null;
+
   try {
     const meeting = await createMeetingRecord({
       title,
@@ -37,23 +40,34 @@ export async function createAndProcessMeetingAction(formData: FormData) {
     });
     meetingId = meeting.id;
   } catch (error) {
-    if (error instanceof AppError) {
-      meetingErrorRedirect(error.code);
-    }
-    meetingErrorRedirect(ErrorCodes.DATABASE_FAILURE);
+    unstable_rethrow(error);
+    existingMeetingId = errorMeetingIdOf(error) ?? null;
+    createError = errorCodeOf(error) ?? ErrorCodes.DATABASE_FAILURE;
   }
 
+  if (existingMeetingId) {
+    redirect(`/admin/meetings/${existingMeetingId}`);
+  }
+  if (createError) {
+    meetingErrorRedirect(createError);
+  }
+
+  let processError: string | null = null;
   try {
     await processMeeting(meetingId);
   } catch (error) {
-    if (error instanceof AppError && error.code === ErrorCodes.DUPLICATE_PROCESSING) {
-      redirect(`/admin/meetings/${meetingId}/review`);
+    unstable_rethrow(error);
+    const code = errorCodeOf(error);
+    if (code !== ErrorCodes.DUPLICATE_PROCESSING) {
+      processError = code ?? ErrorCodes.OPENAI_FAILURE;
     }
-    redirect(`/admin/meetings/${meetingId}?error=${error instanceof AppError ? error.code : ErrorCodes.OPENAI_FAILURE}`);
   }
 
   revalidatePath("/");
   revalidatePath("/admin");
+  if (processError) {
+    redirect(`/admin/meetings/${meetingId}?error=${processError}`);
+  }
   redirect(`/admin/meetings/${meetingId}/review`);
 }
 
@@ -61,18 +75,23 @@ export async function retryProcessMeetingAction(formData: FormData) {
   const meetingId = String(formData.get("meetingId") ?? "").trim();
   if (!meetingId) redirect("/admin");
 
+  let processError: string | null = null;
   try {
     await processMeeting(meetingId, { force: true });
   } catch (error) {
-    if (error instanceof AppError && error.code === ErrorCodes.DUPLICATE_PROCESSING) {
-      redirect(`/admin/meetings/${meetingId}/review`);
+    unstable_rethrow(error);
+    const code = errorCodeOf(error);
+    if (code && code !== ErrorCodes.DUPLICATE_PROCESSING) {
+      processError = code;
+    } else if (!code) {
+      processError = ErrorCodes.OPENAI_FAILURE;
     }
-    redirect(
-      `/admin/meetings/${meetingId}?error=${error instanceof AppError ? error.code : ErrorCodes.OPENAI_FAILURE}`,
-    );
   }
 
   revalidatePath("/");
   revalidatePath("/admin");
+  if (processError) {
+    redirect(`/admin/meetings/${meetingId}?error=${processError}`);
+  }
   redirect(`/admin/meetings/${meetingId}/review`);
 }
