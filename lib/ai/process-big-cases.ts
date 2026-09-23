@@ -55,6 +55,7 @@ export async function processBigCasesMeeting(meetingId: string, options?: { forc
       body: note.body,
       keyPoints: note.keyPoints,
       keywords: note.keywords,
+      litEvents: note.litEvents,
     });
 
     await prisma.meeting.update({

@@ -52,12 +52,19 @@ export const articleResponseSchema = z.object({
 
 export type GeneratedArticle = z.infer<typeof articleResponseSchema>;
 
+export const litEventSchema = z.object({
+  attorney: z.string().min(1),
+  case: z.string().min(1),
+  next_step: z.string().min(1),
+});
+
 export const bigCasesNoteSchema = z.object({
   title: z.string().min(1),
   summary: z.string().min(1),
   key_points: z.array(z.string()).default([]),
   body: z.string().min(1),
   keywords: z.array(z.string()).default([]),
+  lit_events: z.array(litEventSchema).default([]),
 });
 
 export function bigCasesSystemPrompt() {
@@ -75,6 +82,7 @@ Rules:
 - Skip greetings, Zoom problems, and small talk.
 - The summary should be a complete overview of the month’s review, not a teaser.
 - Key points should be the most important next steps across the meeting.
+- Also fill a lit-events tracker table. One row per concrete next step. If one case has two next steps, use two rows. Keep attorney, case name/file number, and the next step as said.
 
 Return JSON:
 {
@@ -82,7 +90,14 @@ Return JSON:
   "summary": "Complete overview of this monthly review",
   "key_points": ["Concrete next step, including the attorney or case when it was said"],
   "body": "Full note organized by attorney. Use line breaks between attorneys and cases.",
-  "keywords": ["attorney name", "case type"]
+  "keywords": ["attorney name", "case type"],
+  "lit_events": [
+    {
+      "attorney": "Jesús",
+      "case": "Charlie Wright 16366",
+      "next_step": "File suit"
+    }
+  ]
 }`;
 }
 
@@ -95,7 +110,7 @@ export function bigCasesUserPrompt(input: {
   const participants =
     input.participants.length > 0 ? input.participants.join(", ") : "Not provided";
 
-  return `Write one overall Big Cases note. Do not extract separate topics.
+  return `Write one overall Big Cases note and a lit-events tracker table. Do not extract separate topics.
 
 Meeting title: ${input.title}
 Meeting date: ${input.meetingDate}

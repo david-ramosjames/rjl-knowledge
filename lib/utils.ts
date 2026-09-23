@@ -5,6 +5,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export type LitEventRow = {
+  attorney: string;
+  caseName: string;
+  nextStep: string;
+};
+
+export function asLitEvents(value: unknown): LitEventRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    const attorney = String(row.attorney ?? "").trim();
+    const caseName = String(row.caseName ?? row.case ?? row.case_name ?? "").trim();
+    const nextStep = String(row.nextStep ?? row.next_step ?? row.event ?? "").trim();
+    if (!attorney && !caseName && !nextStep) return [];
+    return [{ attorney, caseName, nextStep }];
+  });
+}
+
 export function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);

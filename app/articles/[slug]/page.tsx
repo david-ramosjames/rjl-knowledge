@@ -7,11 +7,12 @@ import { RenameArticleForm } from "@/components/admin/rename-article-form";
 import { ErrorBanner } from "@/components/error-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LitEventsTable } from "@/components/articles/lit-events-table";
 import { DiscussionCard } from "@/components/topics/discussion-card";
 import { getArticleBySlug } from "@/lib/db/articles";
 import { ErrorCodes } from "@/lib/errors";
 import { fileHostLabel } from "@/lib/file-links";
-import { asStringArray, formatDate } from "@/lib/utils";
+import { asLitEvents, asStringArray, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 180;
@@ -41,13 +42,14 @@ export default async function ArticlePage({
   if (!article || article.status !== "APPROVED") notFound();
 
   const keyPoints = asStringArray(article.keyPoints);
+  const litEvents = asLitEvents(article.litEvents);
   const paragraphs = article.body
     .split(/\n{2,}/)
     .map((part) => part.trim())
     .filter(Boolean);
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
+    <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-12 sm:px-6">
       <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
         ← Knowledge Hub
       </Link>
@@ -140,6 +142,8 @@ export default async function ArticlePage({
             ))}
         </div>
       </section>
+
+      <LitEventsTable rows={litEvents} />
 
       {keyPoints.length > 0 ? (
         <section className="mt-12">

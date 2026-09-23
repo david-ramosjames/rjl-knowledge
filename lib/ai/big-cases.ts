@@ -28,5 +28,13 @@ export async function generateBigCasesNote(input: {
     body: parsed.data.body.trim(),
     keyPoints: uniqueStrings(parsed.data.key_points).slice(0, 16),
     keywords: uniqueStrings(parsed.data.keywords).slice(0, 16),
+    litEvents: parsed.data.lit_events
+      .map((row) => ({
+        attorney: row.attorney.trim(),
+        caseName: row.case.trim(),
+        nextStep: row.next_step.trim(),
+      }))
+      .filter((row) => row.attorney && row.caseName && row.nextStep)
+      .slice(0, 80),
   };
 }

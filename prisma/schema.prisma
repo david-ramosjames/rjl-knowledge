@@ -134,6 +134,7 @@ model Article {
   body            String      @db.Text
   keyPoints       Json
   keywords        Json
+  litEvents       Json        @default("[]")
   searchText      String      @db.Text
   driveUrl        String?
   fileName        String?

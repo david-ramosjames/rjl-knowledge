@@ -118,6 +118,7 @@ export async function upsertMeetingNoteArticle(input: {
   body: string;
   keyPoints: string[];
   keywords: string[];
+  litEvents?: { attorney: string; caseName: string; nextStep: string }[];
 }) {
   const title = input.title.trim();
   if (!title) {
@@ -126,12 +127,18 @@ export async function upsertMeetingNoteArticle(input: {
 
   const keyPoints = uniqueStrings(input.keyPoints);
   const keywords = uniqueStrings(input.keywords);
+  const litEvents = (input.litEvents ?? []).filter(
+    (row) => row.attorney.trim() && row.caseName.trim() && row.nextStep.trim(),
+  );
   const summary = input.summary.trim();
   const body = input.body.trim();
   if (!summary || !body) {
     throw new AppError(ErrorCodes.OPENAI_FAILURE, "The AI did not return a complete Big Cases note.");
   }
 
+  const trackerText = litEvents
+    .map((row) => `${row.attorney} ${row.caseName} ${row.nextStep}`)
+    .join("\n");
   const searchText =
     buildSearchText({
       title,
@@ -139,7 +146,7 @@ export async function upsertMeetingNoteArticle(input: {
       summary,
       keyPoints,
       keywords,
-    }) + `\n${body}`;
+    }) + `\n${body}\n${trackerText}`;
 
   const existing = await prisma.article.findUnique({ where: { meetingId: input.meetingId } });
 
@@ -155,6 +162,7 @@ export async function upsertMeetingNoteArticle(input: {
           body,
           keyPoints,
           keywords,
+          litEvents,
           searchText,
         },
       });
@@ -170,6 +178,7 @@ export async function upsertMeetingNoteArticle(input: {
         body,
         keyPoints,
         keywords,
+        litEvents,
         searchText,
         meetingId: input.meetingId,
         status: TopicStatus.APPROVED,
