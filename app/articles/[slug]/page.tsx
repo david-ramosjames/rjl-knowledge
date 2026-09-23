@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import { Download } from "lucide-react";
 import { DeleteArticleButton } from "@/components/admin/delete-article-button";
 import { RefreshArticleButton } from "@/components/admin/refresh-article-button";
+import { EditArticleForm } from "@/components/admin/edit-article-form";
 import { RenameArticleForm } from "@/components/admin/rename-article-form";
 import { ErrorBanner } from "@/components/error-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LitEventsTable } from "@/components/articles/lit-events-table";
+import { InlineMarkdown, RichNote } from "@/components/articles/rich-note";
 import { DiscussionCard } from "@/components/topics/discussion-card";
 import { getArticleBySlug } from "@/lib/db/articles";
 import { ErrorCodes } from "@/lib/errors";
@@ -43,10 +45,6 @@ export default async function ArticlePage({
 
   const keyPoints = asStringArray(article.keyPoints);
   const litEvents = asLitEvents(article.litEvents);
-  const paragraphs = article.body
-    .split(/\n{2,}/)
-    .map((part) => part.trim())
-    .filter(Boolean);
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-12 sm:px-6">
@@ -86,7 +84,9 @@ export default async function ArticlePage({
                 ? "The AI could not rewrite this article. Try Refresh again, or upload the file from Admin → Add document if the share link is not public."
                 : query.error === "rename"
                   ? "Enter a title and try saving again."
-                  : undefined
+                  : query.error === "edit"
+                    ? "Summary and note text are required. Check the tracker rows use Attorney | Case | Next step."
+                    : undefined
             }
           />
         </div>
@@ -130,16 +130,8 @@ export default async function ArticlePage({
 
       <section className="mt-10">
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Overview</h2>
-        <div className="mt-4 space-y-4">
-          {article.summary
-            .split(/\n{2,}/)
-            .map((part) => part.trim())
-            .filter(Boolean)
-            .map((paragraph) => (
-              <p key={paragraph.slice(0, 48)} className="text-base leading-8 text-foreground/90 whitespace-pre-wrap">
-                {paragraph}
-              </p>
-            ))}
+        <div className="mt-4">
+          <RichNote text={article.summary} />
         </div>
       </section>
 
@@ -154,7 +146,9 @@ export default async function ArticlePage({
             {keyPoints.map((point) => (
               <li key={point} className="flex gap-3">
                 <span className="mt-2 size-1.5 shrink-0 rounded-full bg-foreground" />
-                <span>{point}</span>
+                <span>
+                  <InlineMarkdown text={point} />
+                </span>
               </li>
             ))}
           </ul>
@@ -165,12 +159,25 @@ export default async function ArticlePage({
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           {article.meeting ? "Monthly note" : "Article"}
         </h2>
-        <div className="mt-4 space-y-5 text-base leading-8 text-foreground/90">
-          {paragraphs.map((paragraph) => (
-            <p key={paragraph.slice(0, 48)} className="whitespace-pre-wrap">
-              {paragraph}
-            </p>
-          ))}
+        <div className="mt-4">
+          <RichNote text={article.body} />
+        </div>
+        <div className="mt-10 border-t border-border pt-8">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Edit this note
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Fix names, next steps, or wording here. Saving does not re-run the AI.
+          </p>
+          <div className="mt-5">
+            <EditArticleForm
+              articleId={article.id}
+              summary={article.summary}
+              body={article.body}
+              keyPoints={keyPoints}
+              litEvents={litEvents}
+            />
+          </div>
         </div>
       </section>
     </main>

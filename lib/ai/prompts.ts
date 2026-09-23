@@ -78,6 +78,7 @@ Rules:
 - Use ONLY the transcript. Do not invent cases, facts, deadlines, or next steps.
 - Organize the note by attorney. For each attorney discussed, cover their top or developing cases and the next steps to move them.
 - Keep case names, file descriptions, and assignments as they were said.
+- The attorney’s name is Kody, not Cody. If the transcript says Cody, write Kody.
 - Include concrete activity: what to file, who to notice, what to request, what to set, what is blocking progress.
 - Skip greetings, Zoom problems, and small talk.
 - The summary should be a complete overview of the month’s review, not a teaser.

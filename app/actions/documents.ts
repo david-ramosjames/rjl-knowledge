@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { generateArticleFromDocument } from "@/lib/ai/article";
 import { processMeeting } from "@/lib/ai/process-meeting";
-import { createArticleRecord, deleteArticle, renameArticle, updateArticleRecord } from "@/lib/db/articles";
+import {
+  createArticleRecord,
+  deleteArticle,
+  renameArticle,
+  updateArticleContent,
+  updateArticleRecord,
+} from "@/lib/db/articles";
 import { prisma } from "@/lib/db/prisma";
 import { fileNameFromShareUrl, normalizeFileShareUrl, optionalFileName } from "@/lib/file-links";
 import { ingestDocumentSource } from "@/lib/ingest/document";
@@ -201,6 +207,53 @@ export async function renameArticleAction(formData: FormData) {
   revalidatePath("/admin/documents");
   revalidatePath(`/articles/${existing.slug}`);
   redirect(returnTo.startsWith("/articles/") ? `/articles/${existing.slug}` : "/admin/documents");
+}
+
+function parseLitEventLines(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .flatMap((line) => {
+      const parts = line.split("|").map((part) => part.trim());
+      if (parts.length < 3) return [];
+      const [attorney, caseName, ...rest] = parts;
+      const nextStep = rest.join(" | ").trim();
+      if (!attorney || !caseName || !nextStep) return [];
+      return [{ attorney, caseName, nextStep }];
+    });
+}
+
+export async function editArticleAction(formData: FormData) {
+  const articleId = String(formData.get("articleId") ?? "").trim();
+  const summary = String(formData.get("summary") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim();
+  const keyPoints = String(formData.get("keyPoints") ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[-•]\s*/, "").trim())
+    .filter(Boolean);
+
+  const existing = await prisma.article.findUnique({ where: { id: articleId } });
+  if (!existing) redirect("/admin/documents?error=edit");
+
+  try {
+    await updateArticleContent(articleId, {
+      summary,
+      body,
+      keyPoints,
+      litEvents: parseLitEventLines(String(formData.get("litEvents") ?? "")),
+    });
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect(`/articles/${existing.slug}?error=edit`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/search");
+  revalidatePath("/admin");
+  revalidatePath("/admin/documents");
+  revalidatePath(`/articles/${existing.slug}`);
+  redirect(`/articles/${existing.slug}`);
 }
 
 export async function deleteArticleAction(formData: FormData) {

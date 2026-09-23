@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { TopicStatus } from "@/lib/generated/prisma/client";
 import { AppError, ErrorCodes } from "@/lib/errors";
-import { asStringArray, buildSearchText, normalizeTitle, slugify, uniqueStrings } from "@/lib/utils";
+import { asLitEvents, asStringArray, buildSearchText, normalizeTitle, slugify, uniqueStrings } from "@/lib/utils";
 
 async function uniqueArticleSlug(title: string) {
   const base = slugify(title);
@@ -186,6 +186,58 @@ export async function upsertMeetingNoteArticle(input: {
     });
   } catch {
     throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not save the Big Cases note. Try again.", 500);
+  }
+}
+
+export async function updateArticleContent(
+  articleId: string,
+  input: {
+    summary: string;
+    body: string;
+    keyPoints: string[];
+    litEvents?: { attorney: string; caseName: string; nextStep: string }[];
+  },
+) {
+  const article = await prisma.article.findUnique({ where: { id: articleId } });
+  if (!article) {
+    throw new AppError(ErrorCodes.NOT_FOUND, "Article not found.");
+  }
+
+  const summary = input.summary.trim();
+  const body = input.body.trim();
+  const keyPoints = uniqueStrings(input.keyPoints);
+  const keywords = asStringArray(article.keywords);
+  const litEvents = (input.litEvents ?? asLitEvents(article.litEvents)).filter(
+    (row) => row.attorney.trim() && row.caseName.trim() && row.nextStep.trim(),
+  );
+  if (!summary || !body) {
+    throw new AppError(ErrorCodes.VALIDATION, "Summary and article text are required.");
+  }
+
+  const trackerText = litEvents
+    .map((row) => `${row.attorney} ${row.caseName} ${row.nextStep}`)
+    .join("\n");
+
+  try {
+    return await prisma.article.update({
+      where: { id: article.id },
+      data: {
+        summary,
+        body,
+        keyPoints,
+        litEvents,
+        searchText:
+          buildSearchText({
+            title: article.title,
+            category: article.category,
+            summary,
+            keyPoints,
+            keywords,
+          }) + `\n${body}\n${trackerText}`,
+      },
+    });
+  } catch {
+    throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not save the article edits. Try again.", 500);
   }
 }
 
