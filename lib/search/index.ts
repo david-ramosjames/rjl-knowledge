@@ -274,6 +274,71 @@ export async function getRecentKnowledge(limit = 6): Promise<KnowledgeSearchResu
     .slice(0, limit);
 }
 
+export async function getRelatedKnowledge({
+  category,
+  excludeId,
+  excludeKind,
+  limit = 4,
+}: {
+  category: string;
+  excludeId: string;
+  excludeKind: KnowledgeKind;
+  limit?: number;
+}): Promise<KnowledgeSearchResult[]> {
+  const [topics, articles] = await Promise.all([
+    prisma.topic.findMany({
+      where: {
+        status: TopicStatus.APPROVED,
+        category,
+        ...(excludeKind === "topic" ? { id: { not: excludeId } } : {}),
+      },
+      include: {
+        _count: { select: { discussions: true } },
+      },
+      orderBy: [{ lastDiscussedAt: "desc" }, { updatedAt: "desc" }],
+      take: limit,
+    }),
+    prisma.article.findMany({
+      where: {
+        status: TopicStatus.APPROVED,
+        category,
+        ...(excludeKind === "article" ? { id: { not: excludeId } } : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+      take: limit,
+    }),
+  ]);
+
+  return [
+    ...topics.map((topic) => ({
+      id: topic.id,
+      kind: "topic" as const,
+      title: topic.title,
+      slug: topic.slug,
+      href: `/topics/${topic.slug}`,
+      category: topic.category,
+      summary: topic.summary,
+      lastDiscussedAt: topic.lastDiscussedAt ?? topic.updatedAt,
+      meta: `${topic._count.discussions} source${topic._count.discussions === 1 ? "" : "s"}`,
+      rank: 1,
+    })),
+    ...articles.map((article) => ({
+      id: article.id,
+      kind: "article" as const,
+      title: article.title,
+      slug: article.slug,
+      href: `/articles/${article.slug}`,
+      category: article.category,
+      summary: article.summary,
+      lastDiscussedAt: article.updatedAt,
+      meta: article.category === "Big Cases" ? "Big Cases" : article.fileName || "Document",
+      rank: 1,
+    })),
+  ]
+    .sort((a, b) => (b.lastDiscussedAt?.getTime() ?? 0) - (a.lastDiscussedAt?.getTime() ?? 0))
+    .slice(0, limit);
+}
+
 export async function getUsedCategories() {
   const [topicGroups, articleGroups] = await Promise.all([
     prisma.topic.groupBy({

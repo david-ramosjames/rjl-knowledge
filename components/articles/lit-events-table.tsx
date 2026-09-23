@@ -1,18 +1,16 @@
 import { Card } from "@/components/ui/card";
 import type { LitEventRow } from "@/lib/utils";
 
-export function LitEventsTable({ rows }: { rows: LitEventRow[] }) {
+export function LitEventsTable({ id, rows }: { id?: string; rows: LitEventRow[] }) {
   if (rows.length === 0) return null;
 
   return (
-    <section className="mt-12">
-      <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-        Upcoming lit events tracker
-      </h2>
-      <p className="mt-2 text-sm text-muted-foreground">
+    <section>
+      <h2 id={id}>Upcoming lit events</h2>
+      <p>
         Attorney, case, and the next concrete step from this review.
       </p>
-      <Card className="mt-4 overflow-x-auto">
+      <Card className="not-prose mt-4 overflow-x-auto">
         <table className="w-full min-w-[36rem] text-left text-sm">
           <thead className="border-b border-border bg-muted/50 text-muted-foreground">
             <tr>

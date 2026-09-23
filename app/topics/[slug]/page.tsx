@@ -1,12 +1,15 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteTopicButton } from "@/components/admin/delete-topic-button";
 import { RefreshTopicButton } from "@/components/admin/refresh-topic-button";
 import { ErrorBanner } from "@/components/error-banner";
-import { Badge } from "@/components/ui/badge";
+import { extractNoteHeadings, RichNote } from "@/components/articles/rich-note";
+import { KnowledgePage } from "@/components/knowledge/knowledge-page";
 import { DiscussionCard } from "@/components/topics/discussion-card";
 import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { getTopicBySlug } from "@/lib/db/topics";
+import { headingId, type KnowledgeHeading } from "@/lib/knowledge/headings";
+import { outdatedReportHref } from "@/lib/knowledge/report";
+import { getRelatedKnowledge } from "@/lib/search";
 import { asStringArray, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -39,88 +42,85 @@ export default async function TopicPage({
 
   const keyPoints = asStringArray(topic.keyPoints);
   const lastUpdated = topic.lastDiscussedAt ?? topic.updatedAt;
-  const summaryParagraphs = topic.summary
-    .split(/\n{2,}/)
-    .map((part) => part.trim())
-    .filter(Boolean);
+  const related = await getRelatedKnowledge({
+    category: topic.category,
+    excludeId: topic.id,
+    excludeKind: "topic",
+  });
+
+  const used = new Set<string>();
+  const headings: KnowledgeHeading[] = [];
+  const addHeading = (title: string) => {
+    const id = headingId(title, used);
+    headings.push({ id, title, level: 2 });
+    return id;
+  };
+
+  const keyPointsId = addHeading("Key points");
+  const overviewId = addHeading("Overview");
+  const overviewHeadingIds = new Set(used);
+  headings.push(...extractNoteHeadings(topic.summary, used));
+  const sourcesId = addHeading("Source discussions");
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
-      <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-        ← Knowledge Hub
-      </Link>
-      <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Badge className="bg-white">{topic.category}</Badge>
-          <h1 className="mt-4 font-serif text-4xl leading-tight tracking-tight sm:text-5xl">{topic.title}</h1>
-          <p className="mt-3 text-sm text-muted-foreground">Updated {formatDate(lastUpdated)}</p>
-        </div>
-        {isAdmin ? (
+    <KnowledgePage
+      category={topic.category}
+      kindLabel="Meeting"
+      title={topic.title}
+      updatedLabel={`Updated ${formatDate(lastUpdated)}`}
+      headings={headings}
+      related={related}
+      reportHref={outdatedReportHref(topic.title, `/topics/${topic.slug}`)}
+      adminHeader={
+        isAdmin ? (
           <div className="flex flex-wrap gap-2">
             <RefreshTopicButton topicId={topic.id} returnTo={`/topics/${topic.slug}`} />
             <DeleteTopicButton topicId={topic.id} title={topic.title} />
           </div>
-        ) : null}
-      </div>
-
+        ) : null
+      }
+    >
       {query.error === "refresh" ? (
-        <div className="mt-6">
+        <div className="mb-8">
           <ErrorBanner message="The AI could not rewrite this topic from the transcript. Try Refresh again in a moment." />
         </div>
       ) : null}
 
-      <section className="mt-10">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Key points</h2>
-        {keyPoints.length > 0 ? (
-          <ul className="mt-4 space-y-3 text-base leading-7">
-            {keyPoints.map((point) => (
-              <li key={point} className="flex gap-3">
-                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-foreground" />
-                <span>{point}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-4 text-sm text-muted-foreground">No key points captured yet.</p>
-        )}
-      </section>
-
-      <section className="mt-12">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Overview</h2>
-        <div className="mt-4 space-y-4">
-          {summaryParagraphs.map((paragraph) => (
-            <p key={paragraph.slice(0, 48)} className="text-base leading-8 text-foreground/90 whitespace-pre-wrap">
-              {paragraph}
-            </p>
+      <h2 id={keyPointsId}>Key points</h2>
+      {keyPoints.length > 0 ? (
+        <ul>
+          {keyPoints.map((point) => (
+            <li key={point}>{point}</li>
           ))}
-        </div>
-      </section>
+        </ul>
+      ) : (
+        <p>No key points captured yet.</p>
+      )}
 
-      <section className="mt-12 pb-8">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          Source discussions
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Watch the clip or read the full transcript. The summary is only a guide — the source is
-          what the firm actually said.
-        </p>
-        <div className="mt-6 space-y-4">
-          {topic.discussions.map((discussion) => (
-            <DiscussionCard
-              key={discussion.id}
-              meetingTitle={discussion.meeting.title}
-              meetingDate={discussion.meeting.meetingDate}
-              speakers={discussion.speakers}
-              sourceSummary={discussion.sourceSummary}
-              transcriptExcerpt={discussion.transcriptExcerpt}
-              meetingTranscript={discussion.meeting.transcript}
-              youtubeVideoId={discussion.meeting.youtubeVideoId}
-              startSeconds={discussion.startSeconds}
-              endSeconds={discussion.endSeconds}
-            />
-          ))}
-        </div>
-      </section>
-    </main>
+      <h2 id={overviewId}>Overview</h2>
+      <RichNote text={topic.summary} headingIds={overviewHeadingIds} />
+
+      <h2 id={sourcesId}>Source discussions</h2>
+      <p>
+        Watch the clip or read the full transcript. The summary is only a guide — the source is
+        what the firm actually said.
+      </p>
+      <div className="mt-6 space-y-4">
+        {topic.discussions.map((discussion) => (
+          <DiscussionCard
+            key={discussion.id}
+            meetingTitle={discussion.meeting.title}
+            meetingDate={discussion.meeting.meetingDate}
+            speakers={discussion.speakers}
+            sourceSummary={discussion.sourceSummary}
+            transcriptExcerpt={discussion.transcriptExcerpt}
+            meetingTranscript={discussion.meeting.transcript}
+            youtubeVideoId={discussion.meeting.youtubeVideoId}
+            startSeconds={discussion.startSeconds}
+            endSeconds={discussion.endSeconds}
+          />
+        ))}
+      </div>
+    </KnowledgePage>
   );
 }

@@ -1,27 +1,36 @@
 import { Fragment } from "react";
+import { headingId, type KnowledgeHeading } from "@/lib/knowledge/headings";
 
-export function RichNote({ text, className }: { text: string; className?: string }) {
+export function RichNote({
+  text,
+  className,
+  headingIds,
+}: {
+  text: string;
+  className?: string;
+  headingIds?: Set<string>;
+}) {
+  const used = headingIds ?? new Set<string>();
   const blocks = parseNoteBlocks(text);
 
   return (
-    <div className={className ?? "space-y-5 text-base leading-8 text-foreground/90"}>
+    <div className={className}>
       {blocks.map((block, index) => {
         if (block.type === "heading") {
+          const id = headingId(block.text, used);
+          const Tag = block.level === 3 ? "h3" : "h2";
           return (
-            <h3 key={`${block.type}-${index}`} className="pt-2 text-lg font-semibold tracking-tight">
+            <Tag key={`${block.type}-${index}`} id={id}>
               <InlineMarkdown text={block.text} />
-            </h3>
+            </Tag>
           );
         }
         if (block.type === "list") {
           return (
-            <ul key={`${block.type}-${index}`} className="space-y-3">
+            <ul key={`${block.type}-${index}`}>
               {block.items.map((item, itemIndex) => (
-                <li key={`${item.slice(0, 32)}-${itemIndex}`} className="flex gap-3">
-                  <span className="mt-3 size-1.5 shrink-0 rounded-full bg-foreground" />
-                  <span>
-                    <InlineMarkdown text={item} />
-                  </span>
+                <li key={`${item.slice(0, 32)}-${itemIndex}`}>
+                  <InlineMarkdown text={item} />
                 </li>
               ))}
             </ul>
@@ -35,6 +44,19 @@ export function RichNote({ text, className }: { text: string; className?: string
       })}
     </div>
   );
+}
+
+export function extractNoteHeadings(text: string, used = new Set<string>()): KnowledgeHeading[] {
+  return parseNoteBlocks(text).flatMap((block) => {
+    if (block.type !== "heading") return [];
+    return [
+      {
+        id: headingId(block.text, used),
+        title: block.text.replace(/:$/, ""),
+        level: block.level,
+      },
+    ];
+  });
 }
 
 export function InlineMarkdown({ text }: { text: string }) {
@@ -54,7 +76,7 @@ export function InlineMarkdown({ text }: { text: string }) {
 
 type NoteBlock =
   | { type: "paragraph"; text: string }
-  | { type: "heading"; text: string }
+  | { type: "heading"; text: string; level: 2 | 3 }
   | { type: "list"; items: string[] };
 
 function parseNoteBlocks(text: string): NoteBlock[] {
@@ -90,12 +112,25 @@ function parseNoteBlocks(text: string): NoteBlock[] {
       continue;
     }
 
-    if (/^#{1,3}\s+/.test(line) || /^(?:\*\*)?[A-Za-z][^:]{0,40}:\s*(?:\*\*)?$/.test(line)) {
+    const hashHeading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (hashHeading) {
       flushList();
       flushParagraph();
       blocks.push({
         type: "heading",
-        text: line.replace(/^#{1,3}\s+/, "").replace(/^\*\*|\*\*$/g, "").trim(),
+        level: hashHeading[1].length >= 3 ? 3 : 2,
+        text: hashHeading[2].replace(/^\*\*|\*\*$/g, "").trim(),
+      });
+      continue;
+    }
+
+    if (/^(?:\*\*)?[A-Za-z][^:]{0,40}:\s*(?:\*\*)?$/.test(line)) {
+      flushList();
+      flushParagraph();
+      blocks.push({
+        type: "heading",
+        level: 2,
+        text: line.replace(/^\*\*|\*\*$/g, "").replace(/:$/, "").trim(),
       });
       continue;
     }

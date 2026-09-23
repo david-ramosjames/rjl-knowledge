@@ -283,11 +283,15 @@ export async function getArticleBySlug(slug: string) {
   });
 }
 
-export async function listArticlesForAdmin() {
+export async function listPublishedArticles() {
   return prisma.article.findMany({
     where: { status: TopicStatus.APPROVED },
     orderBy: [{ updatedAt: "desc" }, { title: "asc" }],
   });
+}
+
+export async function listArticlesForAdmin() {
+  return listPublishedArticles();
 }
 
 export async function deleteArticle(articleId: string) {

@@ -62,3 +62,91 @@ body {
   background: #f6c7d6;
   color: #0b2341;
 }
+
+.knowledge-prose {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: color-mix(in srgb, var(--foreground) 92%, transparent);
+}
+
+.knowledge-prose > * + * {
+  margin-top: 1.15em;
+}
+
+.knowledge-prose h2 {
+  scroll-margin-top: 6rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+
+.knowledge-prose > h2:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.knowledge-prose .not-prose h2,
+.knowledge-prose .not-prose h3 {
+  border-top: none;
+  margin-top: 0.25rem;
+  padding-top: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  scroll-margin-top: 0;
+}
+
+.knowledge-prose .not-prose p {
+  margin-top: 0;
+}
+
+.knowledge-prose .not-prose li::before {
+  content: none;
+}
+
+.knowledge-prose h3 {
+  scroll-margin-top: 6rem;
+  margin-top: 2rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  color: var(--foreground);
+}
+
+.knowledge-prose p {
+  margin-top: 1.15em;
+}
+
+.knowledge-prose ul {
+  margin-top: 1em;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.knowledge-prose li {
+  position: relative;
+  padding-left: 1.15rem;
+}
+
+.knowledge-prose li::before {
+  content: "";
+  position: absolute;
+  top: 0.7em;
+  left: 0;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--foreground);
+}
+
+.knowledge-prose strong {
+  font-weight: 600;
+  color: var(--foreground);
+}

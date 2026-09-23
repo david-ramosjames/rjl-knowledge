@@ -35,7 +35,7 @@ export function DiscussionCard({
   const fallbackTranscript = (meetingTranscript || transcriptExcerpt || "").trim();
 
   return (
-    <Card className="p-6">
+    <Card className="not-prose p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-sm font-medium text-muted-foreground">{formatDate(meetingDate)}</div>

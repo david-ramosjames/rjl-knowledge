@@ -9,6 +9,7 @@ import {
   readUserSession,
 } from "@/lib/auth/session";
 import { RjlLogo } from "@/components/brand/rjl-logo";
+import { HubNav } from "@/components/layout/hub-nav";
 import { Button } from "@/components/ui/button";
 
 export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin" }) {
@@ -30,12 +31,7 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
         <nav className="flex items-center gap-1 text-sm">
           {signedIn ? (
             <>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/">Home</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/search">Search</Link>
-              </Button>
+              <HubNav />
               {isAdmin ? (
                 <>
                   <Button asChild variant={variant === "admin" ? "secondary" : "ghost"} size="sm">
@@ -43,9 +39,6 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
                   </Button>
                   <Button asChild variant="ghost" size="sm">
                     <Link href="/admin/topics">Topics</Link>
-                  </Button>
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href="/admin/documents">Documents</Link>
                   </Button>
                 </>
               ) : null}
