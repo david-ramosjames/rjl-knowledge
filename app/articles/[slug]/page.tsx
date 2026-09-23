@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { LitEventsTable } from "@/components/articles/lit-events-table";
 import { InlineMarkdown, RichNote } from "@/components/articles/rich-note";
 import { DiscussionCard } from "@/components/topics/discussion-card";
+import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { getArticleBySlug } from "@/lib/db/articles";
 import { ErrorCodes } from "@/lib/errors";
 import { fileHostLabel } from "@/lib/file-links";
@@ -42,6 +43,7 @@ export default async function ArticlePage({
   const query = await searchParams;
   const article = await getArticleBySlug(slug);
   if (!article || article.status !== "APPROVED") notFound();
+  const isAdmin = await isCurrentUserAdmin();
 
   const keyPoints = asStringArray(article.keyPoints);
   const litEvents = asLitEvents(article.litEvents);
@@ -61,18 +63,22 @@ export default async function ArticlePage({
             {article.title}
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">Updated {formatDate(article.updatedAt)}</p>
-          <div className="mt-4">
-            <RenameArticleForm
-              articleId={article.id}
-              title={article.title}
-              returnTo={`/articles/${article.slug}`}
-            />
+          {isAdmin ? (
+            <div className="mt-4">
+              <RenameArticleForm
+                articleId={article.id}
+                title={article.title}
+                returnTo={`/articles/${article.slug}`}
+              />
+            </div>
+          ) : null}
+        </div>
+        {isAdmin ? (
+          <div className="flex flex-wrap gap-2">
+            <RefreshArticleButton articleId={article.id} />
+            <DeleteArticleButton articleId={article.id} title={article.title} />
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <RefreshArticleButton articleId={article.id} />
-          <DeleteArticleButton articleId={article.id} title={article.title} />
-        </div>
+        ) : null}
       </div>
 
       {query.error ? (
@@ -162,23 +168,25 @@ export default async function ArticlePage({
         <div className="mt-4">
           <RichNote text={article.body} />
         </div>
-        <div className="mt-10 border-t border-border pt-8">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Edit this note
-          </h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Fix names, next steps, or wording here. Saving does not re-run the AI.
-          </p>
-          <div className="mt-5">
-            <EditArticleForm
-              articleId={article.id}
-              summary={article.summary}
-              body={article.body}
-              keyPoints={keyPoints}
-              litEvents={litEvents}
-            />
+        {isAdmin ? (
+          <div className="mt-10 border-t border-border pt-8">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Edit this note
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Fix names, next steps, or wording here. Saving does not re-run the AI.
+            </p>
+            <div className="mt-5">
+              <EditArticleForm
+                articleId={article.id}
+                summary={article.summary}
+                body={article.body}
+                keyPoints={keyPoints}
+                litEvents={litEvents}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
       </section>
     </main>
   );

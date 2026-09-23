@@ -5,6 +5,7 @@ import { RefreshTopicButton } from "@/components/admin/refresh-topic-button";
 import { ErrorBanner } from "@/components/error-banner";
 import { Badge } from "@/components/ui/badge";
 import { DiscussionCard } from "@/components/topics/discussion-card";
+import { isCurrentUserAdmin } from "@/lib/auth/admin";
 import { getTopicBySlug } from "@/lib/db/topics";
 import { asStringArray, formatDate } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export default async function TopicPage({
   const query = await searchParams;
   const topic = await getTopicBySlug(slug);
   if (!topic || topic.status !== "APPROVED") notFound();
+  const isAdmin = await isCurrentUserAdmin();
 
   const keyPoints = asStringArray(topic.keyPoints);
   const lastUpdated = topic.lastDiscussedAt ?? topic.updatedAt;
@@ -53,10 +55,12 @@ export default async function TopicPage({
           <h1 className="mt-4 font-serif text-4xl leading-tight tracking-tight sm:text-5xl">{topic.title}</h1>
           <p className="mt-3 text-sm text-muted-foreground">Updated {formatDate(lastUpdated)}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <RefreshTopicButton topicId={topic.id} returnTo={`/topics/${topic.slug}`} />
-          <DeleteTopicButton topicId={topic.id} title={topic.title} />
-        </div>
+        {isAdmin ? (
+          <div className="flex flex-wrap gap-2">
+            <RefreshTopicButton topicId={topic.id} returnTo={`/topics/${topic.slug}`} />
+            <DeleteTopicButton topicId={topic.id} title={topic.title} />
+          </div>
+        ) : null}
       </div>
 
       {query.error === "refresh" ? (

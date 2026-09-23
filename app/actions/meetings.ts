@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/admin";
 import { processMeeting } from "@/lib/ai/process-meeting";
 import { createMeetingRecord } from "@/lib/db/meetings";
 import { errorCodeOf, errorMeetingIdOf, ErrorCodes } from "@/lib/errors";
@@ -13,6 +14,7 @@ function meetingErrorRedirect(code: string, extra?: Record<string, string>) {
 }
 
 export async function createAndProcessMeetingAction(formData: FormData) {
+  await requireAdmin();
   const title = String(formData.get("title") ?? "").trim();
   const meetingDateRaw = String(formData.get("meetingDate") ?? "").trim();
   const videoUrl = String(formData.get("videoUrl") ?? "").trim();
@@ -82,6 +84,7 @@ export async function createAndProcessMeetingAction(formData: FormData) {
 }
 
 export async function retryProcessMeetingAction(formData: FormData) {
+  await requireAdmin();
   const meetingId = String(formData.get("meetingId") ?? "").trim();
   if (!meetingId) redirect("/admin");
 

@@ -64,6 +64,7 @@ Admin:
 | `AUTH_SECRET` | Recommended | Cookie signing secret; falls back to `GOOGLE_CLIENT_SECRET` |
 | `GOOGLE_ALLOWED_DOMAIN` | No | Only allow emails at this domain, e.g. `ramosjameslaw.com` |
 | `GOOGLE_ALLOWED_EMAILS` | No | Comma-separated allowlist of Google emails |
+| `ADMIN_EMAILS` | No | Comma-separated emails that can open Admin, e.g. `david@ramosjames.com` |
 | `AUTH_PASSWORD` | No | Password login only if Google is not configured |
 
 Do not expose `OPENAI_API_KEY`, `DATABASE_URL`, or `GOOGLE_CLIENT_SECRET` to the browser. They are server-only.

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { generateArticleFromDocument } from "@/lib/ai/article";
+import { requireAdmin } from "@/lib/auth/admin";
 import { processMeeting } from "@/lib/ai/process-meeting";
 import {
   createArticleRecord,
@@ -22,6 +23,7 @@ function documentErrorRedirect(code: string): never {
 }
 
 export async function createDocumentArticleAction(formData: FormData) {
+  await requireAdmin();
   const titleHint = String(formData.get("title") ?? "").trim();
   const categoryRaw = String(formData.get("category") ?? "").trim();
   const categoryHint = categoryRaw ? normalizeCategory(categoryRaw) : "";
@@ -107,6 +109,7 @@ export async function createDocumentArticleAction(formData: FormData) {
 }
 
 export async function refreshArticleAction(formData: FormData) {
+  await requireAdmin();
   const articleId = String(formData.get("articleId") ?? "").trim();
   const uploaded = formData.get("file");
   const file = uploaded instanceof File && uploaded.size > 0 ? uploaded : null;
@@ -174,6 +177,7 @@ export async function refreshArticleAction(formData: FormData) {
 }
 
 export async function renameArticleAction(formData: FormData) {
+  await requireAdmin();
   const articleId = String(formData.get("articleId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const returnTo = String(formData.get("returnTo") ?? "").trim();
@@ -225,6 +229,7 @@ function parseLitEventLines(value: string) {
 }
 
 export async function editArticleAction(formData: FormData) {
+  await requireAdmin();
   const articleId = String(formData.get("articleId") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
@@ -257,6 +262,7 @@ export async function editArticleAction(formData: FormData) {
 }
 
 export async function deleteArticleAction(formData: FormData) {
+  await requireAdmin();
   const articleId = String(formData.get("articleId") ?? "").trim();
   if (!articleId) redirect("/admin/documents");
 

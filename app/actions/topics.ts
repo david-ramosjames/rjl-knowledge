@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/admin";
 import { synthesizeTopicFromDiscussions } from "@/lib/ai/synthesize";
 import { prisma } from "@/lib/db/prisma";
 import {
@@ -23,6 +24,7 @@ function parsePoints(value: string) {
 }
 
 export async function editCandidateAction(formData: FormData) {
+  await requireAdmin();
   const candidateId = String(formData.get("candidateId") ?? "");
   const meetingId = String(formData.get("meetingId") ?? "");
   const title = String(formData.get("title") ?? "").trim();
@@ -60,6 +62,7 @@ export async function editCandidateAction(formData: FormData) {
 }
 
 export async function approveNewTopicAction(formData: FormData) {
+  await requireAdmin();
   const candidateId = String(formData.get("candidateId") ?? "");
   const meetingId = String(formData.get("meetingId") ?? "");
   try {
@@ -79,6 +82,7 @@ export async function approveNewTopicAction(formData: FormData) {
 }
 
 export async function addToExistingTopicAction(formData: FormData) {
+  await requireAdmin();
   const candidateId = String(formData.get("candidateId") ?? "");
   const topicId = String(formData.get("topicId") ?? "");
   const meetingId = String(formData.get("meetingId") ?? "");
@@ -102,6 +106,7 @@ export async function addToExistingTopicAction(formData: FormData) {
 }
 
 export async function ignoreCandidateAction(formData: FormData) {
+  await requireAdmin();
   const candidateId = String(formData.get("candidateId") ?? "");
   const meetingId = String(formData.get("meetingId") ?? "");
   try {
@@ -118,6 +123,7 @@ export async function ignoreCandidateAction(formData: FormData) {
 }
 
 export async function refreshTopicAction(formData: FormData) {
+  await requireAdmin();
   const topicId = String(formData.get("topicId") ?? "").trim();
   const returnTo = String(formData.get("returnTo") ?? "").trim();
   if (!topicId) redirect("/admin/topics");
@@ -146,6 +152,7 @@ export async function refreshTopicAction(formData: FormData) {
 }
 
 export async function deleteTopicAction(formData: FormData) {
+  await requireAdmin();
   const topicId = String(formData.get("topicId") ?? "").trim();
   if (!topicId) redirect("/admin/topics");
 

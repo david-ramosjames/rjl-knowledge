@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { logoutAction } from "@/app/actions/auth";
+import { isAdminSession } from "@/lib/auth/roles";
 import {
   SESSION_COOKIE,
   isAuthEnabled,
@@ -15,6 +16,7 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   const signedIn = !authEnabled || isValidSessionToken(token);
   const user = readUserSession(token);
+  const isAdmin = isAdminSession(token);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
@@ -34,15 +36,19 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
               <Button asChild variant="ghost" size="sm">
                 <Link href="/search">Search</Link>
               </Button>
-              <Button asChild variant={variant === "admin" ? "secondary" : "ghost"} size="sm">
-                <Link href="/admin">Admin</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/admin/topics">Topics</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/admin/documents">Documents</Link>
-              </Button>
+              {isAdmin ? (
+                <>
+                  <Button asChild variant={variant === "admin" ? "secondary" : "ghost"} size="sm">
+                    <Link href="/admin">Admin</Link>
+                  </Button>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/admin/topics">Topics</Link>
+                  </Button>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href="/admin/documents">Documents</Link>
+                  </Button>
+                </>
+              ) : null}
               {authEnabled ? (
                 <form action={logoutAction} className="flex items-center gap-2">
                   {user?.email ? (

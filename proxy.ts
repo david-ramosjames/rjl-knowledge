@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAdminSession } from "@/lib/auth/roles";
 import { SESSION_COOKIE, isAuthEnabled, isValidSessionToken } from "@/lib/auth/session";
 
 export function proxy(request: NextRequest) {
@@ -10,7 +11,12 @@ export function proxy(request: NextRequest) {
   }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (isValidSessionToken(token)) return NextResponse.next();
+  if (isValidSessionToken(token)) {
+    if (pathname.startsWith("/admin") && !isAdminSession(token)) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return NextResponse.next();
+  }
 
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = "/login";
