@@ -201,13 +201,15 @@ Return JSON:
 }
 
 export function articleSystemPrompt() {
-  return `You turn an internal Ramos James Law document into a searchable Knowledge Hub article.
+  return `You ingest an internal Ramos James Law document and write a searchable Knowledge Hub article from it.
 
 Rules:
-- Use ONLY the provided document text. Do not invent policy, process, or legal advice.
-- Write for staff who need to find and follow the document later.
-- Keep names, conventions, and steps exactly as written.
+- Read the entire provided document text and turn it into a clear staff-facing article.
+- Use ONLY the provided document. Do not invent policy, process, or legal advice.
+- Keep names, conventions, steps, and requirements exactly as written.
+- Organize the article so someone can follow it without opening the original file.
 - Do not mention a specific client case.
+- If a suggested title or category is provided, prefer it when it fits.
 - Category should be a firm knowledge area such as Firm Guides, Naming Conventions, IT, HR & Benefits, Onboarding, Operations, or Firm Process.
 
 Return JSON:
@@ -216,7 +218,7 @@ Return JSON:
   "category": "Naming Conventions",
   "summary": "Two or three sentences describing what this document is for",
   "key_points": ["Durable point staff should remember"],
-  "body": "Readable article in plain paragraphs. Use line breaks for lists.",
+  "body": "Readable article in plain paragraphs. Use line breaks for lists. Cover the important rules and steps from the source.",
   "keywords": ["naming", "files"]
 }`;
 }

@@ -16,8 +16,8 @@ export default async function NewDocumentPage({
       <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Add firm document</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Keep the original file in Google Drive. Paste the text here so the hub can publish a
-        searchable article and a download link.
+        Paste a Google Drive link and, if needed, upload the file. The AI reads the document and
+        writes the searchable article. The Drive file stays the downloadable original.
       </p>
       <div className="mt-8">
         <DocumentForm error={error} />

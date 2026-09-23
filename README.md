@@ -17,6 +17,7 @@ This is an internal application, not a public marketing site. Treat every transc
 3. The admin reviews, edits, ignores, or merges those topics.
 4. Approved topics appear in the Knowledge Hub.
 5. Attorneys and staff can search or browse, open a topic, and jump to the original discussion — including a timestamped watch link when a video was attached.
+6. Admins can also add firm documents (Drive link plus optional upload). The AI ingests the file and publishes a searchable article; staff download the original from Drive.
 
 The model is instructed to summarize **only** the transcript. It must not add outside legal knowledge or independent legal advice.
 
@@ -48,6 +49,7 @@ Admin:
 
 - [http://localhost:3000/admin](http://localhost:3000/admin)
 - Add Meeting: `/admin/meetings/new`
+- Add firm document: `/admin/documents/new`
 
 ## Environment variables
 
@@ -256,13 +258,21 @@ Link `DATABASE_URL` from the Postgres service to the app service in the Railway 
 
 If OpenAI fails, the meeting and transcript are still saved. Open the meeting and click **Retry processing**.
 
+To add a firm guide or naming convention:
+
+1. Open `/admin/documents/new`.
+2. Paste a Google Drive link (share it so anyone with the link can view).
+3. Upload the file if Drive sharing is restricted, or for PDFs and Word documents.
+4. Click **Ingest and publish**. The AI reads the document and writes the searchable article. Staff download the original from Drive.
+
 ## Architecture
 
 ```text
 /app            Hub, search, topic pages, admin, server actions
 /components     UI
 /lib/db         Prisma client and topic/meeting writes
-/lib/ai         OpenAI extraction and synthesis
+/lib/ai         OpenAI extraction, article writing, and synthesis
+/lib/ingest     Drive/upload document text extraction
 /lib/search     Postgres full-text / ILIKE search
 /lib/youtube    URL parsing and timestamped watch links
 /prisma         Schema, migrations, seed

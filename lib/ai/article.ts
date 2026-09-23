@@ -19,7 +19,7 @@ export async function generateArticleFromDocument(input: {
   if (!parsed.success) {
     throw new AppError(
       ErrorCodes.MALFORMED_LLM_JSON,
-      "The model could not turn that document into an article. You can paste the article text yourself and try again.",
+      "The model could not turn that document into an article. Try ingesting it again.",
     );
   }
 

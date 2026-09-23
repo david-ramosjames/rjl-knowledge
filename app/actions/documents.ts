@@ -5,6 +5,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { generateArticleFromDocument } from "@/lib/ai/article";
 import { createArticleRecord, deleteArticle } from "@/lib/db/articles";
 import { googleDriveFileName, normalizeGoogleDriveUrl } from "@/lib/drive";
+import { ingestDocumentSource } from "@/lib/ingest/document";
 import { normalizeCategory } from "@/lib/categories";
 import { AppError, ErrorCodes } from "@/lib/errors";
 
@@ -13,52 +14,61 @@ function documentErrorRedirect(code: string): never {
 }
 
 export async function createDocumentArticleAction(formData: FormData) {
-  const title = String(formData.get("title") ?? "").trim();
-  const category = normalizeCategory(String(formData.get("category") ?? ""));
+  const titleHint = String(formData.get("title") ?? "").trim();
+  const categoryRaw = String(formData.get("category") ?? "").trim();
+  const categoryHint = categoryRaw ? normalizeCategory(categoryRaw) : "";
   const driveUrlRaw = String(formData.get("driveUrl") ?? "").trim();
-  const fileName = googleDriveFileName(String(formData.get("fileName") ?? ""));
-  const sourceText = String(formData.get("sourceText") ?? "").trim();
-  const articleBody = String(formData.get("articleBody") ?? "").trim();
+  const uploaded = formData.get("file");
+  const file =
+    uploaded instanceof File && uploaded.size > 0 ? uploaded : null;
+  const pastedText = String(formData.get("sourceText") ?? "").trim();
+  let fileName = googleDriveFileName(String(formData.get("fileName") ?? "")) ?? file?.name ?? null;
 
-  if (!title) documentErrorRedirect(ErrorCodes.VALIDATION);
   const driveUrl = normalizeGoogleDriveUrl(driveUrlRaw);
   if (!driveUrl) documentErrorRedirect(ErrorCodes.INVALID_DRIVE_URL);
-  if (!sourceText && !articleBody) documentErrorRedirect(ErrorCodes.MISSING_TRANSCRIPT);
 
-  let summary = articleBody ? articleBody.slice(0, 400) : "";
-  let body = articleBody;
-  let keyPoints: string[] = [];
-  let keywords: string[] = [];
-  let publishedTitle = title;
-  let publishedCategory = category;
-
-  if (!body && sourceText) {
-    try {
-      const generated = await generateArticleFromDocument({
-        title,
-        category,
-        fileName,
-        sourceText,
-      });
-      publishedTitle = generated.title || title;
-      publishedCategory = generated.category || category;
-      summary = generated.summary;
-      body = generated.body;
-      keyPoints = generated.keyPoints;
-      keywords = generated.keywords;
-    } catch (error) {
-      unstable_rethrow(error);
-      if (error instanceof AppError && error.code === ErrorCodes.OPENAI_FAILURE) {
-        body = sourceText;
-        summary = sourceText.slice(0, 400);
-      } else {
-        documentErrorRedirect(error instanceof AppError ? error.code : ErrorCodes.OPENAI_FAILURE);
-      }
-    }
+  let ingestedText = "";
+  try {
+    const ingested = await ingestDocumentSource({
+      driveUrl,
+      uploaded: file,
+      pastedText,
+    });
+    ingestedText = ingested.text;
+    fileName = fileName ?? ingested.fileName ?? null;
+  } catch (error) {
+    unstable_rethrow(error);
+    documentErrorRedirect(error instanceof AppError ? error.code : ErrorCodes.INGEST_FAILED);
   }
 
-  if (!body) documentErrorRedirect(ErrorCodes.VALIDATION);
-  if (!summary) summary = body.slice(0, 400);
+  if (!ingestedText.trim()) documentErrorRedirect(ErrorCodes.INGEST_FAILED);
+
+  let publishedTitle = titleHint;
+  let publishedCategory = categoryHint || "Firm Guides";
+  let summary = "";
+  let body = "";
+  let keyPoints: string[] = [];
+  let keywords: string[] = [];
+
+  try {
+    const generated = await generateArticleFromDocument({
+      title: titleHint,
+      category: categoryHint,
+      fileName,
+      sourceText: ingestedText,
+    });
+    publishedTitle = generated.title || titleHint || fileName || "Firm document";
+    publishedCategory = generated.category || publishedCategory;
+    summary = generated.summary;
+    body = generated.body;
+    keyPoints = generated.keyPoints;
+    keywords = generated.keywords;
+  } catch (error) {
+    unstable_rethrow(error);
+    documentErrorRedirect(error instanceof AppError ? error.code : ErrorCodes.OPENAI_FAILURE);
+  }
+
+  if (!body) documentErrorRedirect(ErrorCodes.OPENAI_FAILURE);
 
   let slug = "";
   try {

@@ -27,8 +27,8 @@ export default async function AdminDocumentsPage({
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Firm documents</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Guides, naming conventions, and other firm knowledge. The article is searchable; the
-            original file stays on Google Drive.
+            Guides, naming conventions, and other firm knowledge. The AI ingests the document and
+            writes the searchable article. The original file stays on Google Drive.
           </p>
         </div>
         <Button asChild>
