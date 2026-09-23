@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     default: "Knowledge Hub",
     template: "%s · Knowledge Hub",
   },
-  description: "Search what Ramos James Law attorneys have discussed.",
+  description: "Search meetings, guides, and other knowledge about Ramos James Law.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

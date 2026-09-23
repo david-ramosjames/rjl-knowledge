@@ -41,6 +41,17 @@ export const synthesisResponseSchema = z.object({
   keywords: z.array(z.string()).default([]),
 });
 
+export const articleResponseSchema = z.object({
+  title: z.string().min(1),
+  category: z.string().min(1),
+  summary: z.string().min(1),
+  key_points: z.array(z.string()).default([]),
+  body: z.string().min(1),
+  keywords: z.array(z.string()).default([]),
+});
+
+export type GeneratedArticle = z.infer<typeof articleResponseSchema>;
+
 export function extractionSystemPrompt() {
   return `You extract reusable internal knowledge from Ramos James Law attorney meeting transcripts for the Knowledge Hub.
 
@@ -187,4 +198,39 @@ Return JSON:
   "key_points": ["Updated point supported by the source discussions"],
   "keywords": ["keyword"]
 }`;
+}
+
+export function articleSystemPrompt() {
+  return `You turn an internal Ramos James Law document into a searchable Knowledge Hub article.
+
+Rules:
+- Use ONLY the provided document text. Do not invent policy, process, or legal advice.
+- Write for staff who need to find and follow the document later.
+- Keep names, conventions, and steps exactly as written.
+- Do not mention a specific client case.
+- Category should be a firm knowledge area such as Firm Guides, Naming Conventions, IT, HR & Benefits, Onboarding, Operations, or Firm Process.
+
+Return JSON:
+{
+  "title": "Clear document title",
+  "category": "Naming Conventions",
+  "summary": "Two or three sentences describing what this document is for",
+  "key_points": ["Durable point staff should remember"],
+  "body": "Readable article in plain paragraphs. Use line breaks for lists.",
+  "keywords": ["naming", "files"]
+}`;
+}
+
+export function articleUserPrompt(input: {
+  title: string;
+  category: string;
+  fileName?: string | null;
+  sourceText: string;
+}) {
+  return `Suggested title: ${input.title || "Not provided"}
+Suggested category: ${input.category || "Not provided"}
+File name: ${input.fileName || "Not provided"}
+
+Document text:
+${input.sourceText}`;
 }

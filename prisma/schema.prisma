@@ -115,3 +115,25 @@ model TopicCandidate {
   @@index([meetingId, status])
   @@index([status])
 }
+
+model Article {
+  id              String      @id @default(cuid())
+  title           String
+  slug            String      @unique
+  normalizedTitle String
+  category        String
+  summary         String      @db.Text
+  body            String      @db.Text
+  keyPoints       Json
+  keywords        Json
+  searchText      String      @db.Text
+  driveUrl        String
+  fileName        String?
+  status          TopicStatus @default(APPROVED)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([category])
+  @@index([status, updatedAt])
+  @@index([normalizedTitle])
+}

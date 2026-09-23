@@ -44,7 +44,7 @@ export function SearchBar({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           autoFocus={autoFocus}
-          placeholder="Search cases, issues, strategies, or firm guidance…"
+          placeholder="Search meetings, guides, naming conventions, or firm knowledge…"
           className={cn(
             "h-full w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
             size === "lg" ? "text-lg" : "text-sm",

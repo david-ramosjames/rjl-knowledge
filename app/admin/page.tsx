@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, FileUp, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getAdminStats } from "@/lib/db/meetings";
@@ -31,10 +31,10 @@ export default async function AdminPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Meeting processing</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Knowledge Hub admin</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Paste a transcript — with or without a video — then review lasting topics before they go
-            into the Knowledge Hub.
+            Add attorney meetings, firm guides, naming conventions, and other documents so staff can
+            search them in the hub.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -42,6 +42,12 @@ export default async function AdminPage() {
             <Link href="/admin/meetings/new">
               <Plus className="size-4" />
               Add Meeting
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/admin/documents/new">
+              <FileUp className="size-4" />
+              Add document
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline">
@@ -53,10 +59,11 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Meetings processed" value={stats.meetingsProcessed} />
-        <Stat label="Topics created" value={stats.topicsCreated} />
+        <Stat label="Meeting topics" value={stats.topicsCreated} />
         <Stat label="Topics awaiting review" value={stats.topicsAwaitingReview} />
+        <Stat label="Firm documents" value={stats.articlesPublished} />
       </div>
 
       <section className="mt-12">
@@ -64,9 +71,14 @@ export default async function AdminPage() {
           <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Recent meetings
           </h2>
-          <Link href="/admin/meetings" className="text-sm text-accent hover:underline">
-            View all
-          </Link>
+          <div className="flex gap-4">
+            <Link href="/admin/documents" className="text-sm text-accent hover:underline">
+              Documents
+            </Link>
+            <Link href="/admin/meetings" className="text-sm text-accent hover:underline">
+              View all meetings
+            </Link>
+          </div>
         </div>
         <Card className="overflow-hidden">
           <table className="w-full text-left text-sm">

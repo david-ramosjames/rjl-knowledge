@@ -37,6 +37,7 @@ export const ErrorCodes = {
   DUPLICATE_PROCESSING: "DUPLICATE_PROCESSING",
   NOT_FOUND: "NOT_FOUND",
   VALIDATION: "VALIDATION",
+  INVALID_DRIVE_URL: "INVALID_DRIVE_URL",
 } as const;
 
 export function errorMessageFromCode(code: string, fallback?: string): string {
@@ -57,6 +58,8 @@ export function errorMessageFromCode(code: string, fallback?: string): string {
       return "This meeting is already in the hub. Open it to review topics or retry processing.";
     case ErrorCodes.NOT_FOUND:
       return "We could not find that record.";
+    case ErrorCodes.INVALID_DRIVE_URL:
+      return "Paste a Google Drive or Google Docs link so people can download the original file.";
     default:
       return fallback || "Something went wrong. Try again.";
   }

@@ -4,14 +4,18 @@
 import { prisma } from "@/lib/db/prisma";
 import { Prisma, TopicStatus } from "@/lib/generated/prisma/client";
 
-export type TopicSearchResult = {
+export type KnowledgeKind = "topic" | "article";
+
+export type KnowledgeSearchResult = {
   id: string;
+  kind: KnowledgeKind;
   title: string;
   slug: string;
+  href: string;
   category: string;
   summary: string;
-  discussionCount: number;
   lastDiscussedAt: Date | null;
+  meta?: string;
   rank: number;
 };
 
@@ -26,12 +30,40 @@ type SearchRow = {
   rank: number;
 };
 
-export async function searchTopics(query: string, options?: { category?: string }): Promise<TopicSearchResult[]> {
+type ArticleSearchRow = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  summary: string;
+  updatedAt: Date;
+  fileName: string | null;
+  rank: number;
+};
+
+export async function searchKnowledge(
+  query: string,
+  options?: { category?: string },
+): Promise<KnowledgeSearchResult[]> {
   const q = query.trim();
   const category = options?.category?.trim();
 
   if (!q && !category) return [];
 
+  const [topics, articles] = await Promise.all([
+    queryTopics(q, category),
+    queryArticles(q, category),
+  ]);
+
+  return [...topics, ...articles].sort((a, b) => {
+    if (b.rank !== a.rank) return b.rank - a.rank;
+    const aDate = a.lastDiscussedAt?.getTime() ?? 0;
+    const bDate = b.lastDiscussedAt?.getTime() ?? 0;
+    return bDate - aDate;
+  });
+}
+
+async function queryTopics(q: string, category?: string): Promise<KnowledgeSearchResult[]> {
   if (!q && category) {
     const topics = await prisma.topic.findMany({
       where: {
@@ -46,12 +78,14 @@ export async function searchTopics(query: string, options?: { category?: string 
 
     return topics.map((topic) => ({
       id: topic.id,
+      kind: "topic" as const,
       title: topic.title,
       slug: topic.slug,
+      href: `/topics/${topic.slug}`,
       category: topic.category,
       summary: topic.summary,
-      discussionCount: topic._count.discussions,
       lastDiscussedAt: topic.lastDiscussedAt,
+      meta: `${topic._count.discussions} source${topic._count.discussions === 1 ? "" : "s"}`,
       rank: 1,
     }));
   }
@@ -101,37 +135,170 @@ export async function searchTopics(query: string, options?: { category?: string 
 
   return rows.map((row) => ({
     id: row.id,
+    kind: "topic" as const,
     title: row.title,
     slug: row.slug,
+    href: `/topics/${row.slug}`,
     category: row.category,
     summary: row.summary,
-    discussionCount: Number(row.discussionCount),
     lastDiscussedAt: row.lastDiscussedAt,
+    meta: `${Number(row.discussionCount)} source${Number(row.discussionCount) === 1 ? "" : "s"}`,
     rank: Number(row.rank),
   }));
 }
 
-export async function getRecentTopics(limit = 6) {
-  return prisma.topic.findMany({
-    where: { status: TopicStatus.APPROVED },
-    include: {
-      _count: { select: { discussions: true } },
-    },
-    orderBy: [{ lastDiscussedAt: "desc" }, { updatedAt: "desc" }],
-    take: limit,
-  });
+async function queryArticles(q: string, category?: string): Promise<KnowledgeSearchResult[]> {
+  if (!q && category) {
+    const articles = await prisma.article.findMany({
+      where: {
+        status: TopicStatus.APPROVED,
+        category,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    return articles.map((article) => ({
+      id: article.id,
+      kind: "article" as const,
+      title: article.title,
+      slug: article.slug,
+      href: `/articles/${article.slug}`,
+      category: article.category,
+      summary: article.summary,
+      lastDiscussedAt: article.updatedAt,
+      meta: article.fileName || "Document",
+      rank: 1,
+    }));
+  }
+
+  const prefix = `${q}%`;
+  const contains = `%${q}%`;
+
+  const rows = await prisma.$queryRaw<ArticleSearchRow[]>(Prisma.sql`
+    SELECT
+      a.id,
+      a.title,
+      a.slug,
+      a.category,
+      a.summary,
+      a."updatedAt",
+      a."fileName",
+      (
+        CASE
+          WHEN lower(a.title) = lower(${q}) THEN 100
+          WHEN a.title ILIKE ${prefix} THEN 80
+          WHEN a.title ILIKE ${contains} THEN 55
+          WHEN a.category ILIKE ${contains} THEN 40
+          ELSE 0
+        END
+        + CASE WHEN a."searchText" ILIKE ${contains} THEN 12 ELSE 0 END
+        + CASE
+            WHEN to_tsvector('english', a."searchText") @@ websearch_to_tsquery('english', ${q})
+            THEN ts_rank(to_tsvector('english', a."searchText"), websearch_to_tsquery('english', ${q})) * 25
+            ELSE 0
+          END
+      ) AS rank
+    FROM "Article" a
+    WHERE a.status = 'APPROVED'
+      ${category ? Prisma.sql`AND a.category = ${category}` : Prisma.empty}
+      AND (
+        a.title ILIKE ${contains}
+        OR a.category ILIKE ${contains}
+        OR a.summary ILIKE ${contains}
+        OR a.body ILIKE ${contains}
+        OR a."searchText" ILIKE ${contains}
+        OR to_tsvector('english', a."searchText") @@ websearch_to_tsquery('english', ${q})
+      )
+    ORDER BY rank DESC, a."updatedAt" DESC
+    LIMIT 50
+  `);
+
+  return rows.map((row) => ({
+    id: row.id,
+    kind: "article" as const,
+    title: row.title,
+    slug: row.slug,
+    href: `/articles/${row.slug}`,
+    category: row.category,
+    summary: row.summary,
+    lastDiscussedAt: row.updatedAt,
+    meta: row.fileName || "Document",
+    rank: Number(row.rank),
+  }));
+}
+
+export async function getRecentKnowledge(limit = 6): Promise<KnowledgeSearchResult[]> {
+  const [topics, articles] = await Promise.all([
+    prisma.topic.findMany({
+      where: { status: TopicStatus.APPROVED },
+      include: {
+        _count: { select: { discussions: true } },
+      },
+      orderBy: [{ lastDiscussedAt: "desc" }, { updatedAt: "desc" }],
+      take: limit,
+    }),
+    prisma.article.findMany({
+      where: { status: TopicStatus.APPROVED },
+      orderBy: { updatedAt: "desc" },
+      take: limit,
+    }),
+  ]);
+
+  return [
+    ...topics.map((topic) => ({
+      id: topic.id,
+      kind: "topic" as const,
+      title: topic.title,
+      slug: topic.slug,
+      href: `/topics/${topic.slug}`,
+      category: topic.category,
+      summary: topic.summary,
+      lastDiscussedAt: topic.lastDiscussedAt ?? topic.updatedAt,
+      meta: `${topic._count.discussions} source${topic._count.discussions === 1 ? "" : "s"}`,
+      rank: 1,
+    })),
+    ...articles.map((article) => ({
+      id: article.id,
+      kind: "article" as const,
+      title: article.title,
+      slug: article.slug,
+      href: `/articles/${article.slug}`,
+      category: article.category,
+      summary: article.summary,
+      lastDiscussedAt: article.updatedAt,
+      meta: article.fileName || "Document",
+      rank: 1,
+    })),
+  ]
+    .sort((a, b) => (b.lastDiscussedAt?.getTime() ?? 0) - (a.lastDiscussedAt?.getTime() ?? 0))
+    .slice(0, limit);
 }
 
 export async function getUsedCategories() {
-  const grouped = await prisma.topic.groupBy({
-    by: ["category"],
-    where: { status: TopicStatus.APPROVED },
-    _count: { _all: true },
-    orderBy: { category: "asc" },
-  });
+  const [topicGroups, articleGroups] = await Promise.all([
+    prisma.topic.groupBy({
+      by: ["category"],
+      where: { status: TopicStatus.APPROVED },
+      _count: { _all: true },
+    }),
+    prisma.article.groupBy({
+      by: ["category"],
+      where: { status: TopicStatus.APPROVED },
+      _count: { _all: true },
+    }),
+  ]);
 
-  return grouped.map((item) => ({
-    category: item.category,
-    count: item._count._all,
-  }));
+  const counts = new Map<string, number>();
+  for (const item of [...topicGroups, ...articleGroups]) {
+    counts.set(item.category, (counts.get(item.category) ?? 0) + item._count._all);
+  }
+
+  return [...counts.entries()]
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => a.category.localeCompare(b.category));
 }
+
+/** @deprecated Use searchKnowledge */
+export const searchTopics = searchKnowledge;
+/** @deprecated Use getRecentKnowledge */
+export const getRecentTopics = getRecentKnowledge;

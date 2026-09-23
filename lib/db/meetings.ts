@@ -4,22 +4,24 @@ import { AppError, ErrorCodes } from "@/lib/errors";
 import { extractYouTubeVideoId, canonicalYouTubeUrl } from "@/lib/youtube";
 
 export async function getAdminStats() {
-  const [meetingsProcessed, topicsCreated, topicsAwaitingReview, recentMeetings] = await Promise.all([
-    prisma.meeting.count({
-      where: { status: { in: [MeetingStatus.PROCESSED, MeetingStatus.AWAITING_REVIEW] } },
-    }),
-    prisma.topic.count({ where: { status: "APPROVED" } }),
-    prisma.topicCandidate.count({ where: { status: CandidateStatus.PENDING } }),
-    prisma.meeting.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      include: {
-        _count: { select: { candidates: true, discussions: true } },
-      },
-    }),
-  ]);
+  const [meetingsProcessed, topicsCreated, topicsAwaitingReview, articlesPublished, recentMeetings] =
+    await Promise.all([
+      prisma.meeting.count({
+        where: { status: { in: [MeetingStatus.PROCESSED, MeetingStatus.AWAITING_REVIEW] } },
+      }),
+      prisma.topic.count({ where: { status: "APPROVED" } }),
+      prisma.topicCandidate.count({ where: { status: CandidateStatus.PENDING } }),
+      prisma.article.count({ where: { status: "APPROVED" } }),
+      prisma.meeting.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        include: {
+          _count: { select: { candidates: true, discussions: true } },
+        },
+      }),
+    ]);
 
-  return { meetingsProcessed, topicsCreated, topicsAwaitingReview, recentMeetings };
+  return { meetingsProcessed, topicsCreated, topicsAwaitingReview, articlesPublished, recentMeetings };
 }
 
 export async function getMeetingForReview(id: string) {

@@ -1,7 +1,9 @@
 import { FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { TranscriptPanel } from "@/components/topics/transcript-panel";
 import { asStringArray, namedSpeakers, formatDate } from "@/lib/utils";
+import { linesForRange, parseTranscript } from "@/lib/transcript/parse";
 import { formatTimestamp, youtubeEmbedUrl } from "@/lib/youtube";
 
 export function DiscussionCard({
@@ -10,20 +12,27 @@ export function DiscussionCard({
   speakers,
   sourceSummary,
   transcriptExcerpt,
+  meetingTranscript,
   youtubeVideoId,
   startSeconds,
+  endSeconds,
 }: {
   meetingTitle: string;
   meetingDate: Date;
   speakers: unknown;
   sourceSummary: string;
   transcriptExcerpt: string;
+  meetingTranscript?: string | null;
   youtubeVideoId: string | null;
   startSeconds: number;
+  endSeconds?: number | null;
 }) {
   const speakerList = namedSpeakers(asStringArray(speakers));
   const embedUrl = youtubeVideoId ? youtubeEmbedUrl(youtubeVideoId, startSeconds) : null;
   const showTimestamp = Boolean(embedUrl) || startSeconds > 0;
+  const fullLines = parseTranscript(meetingTranscript ?? "");
+  const rangeLines = fullLines.length > 0 ? linesForRange(fullLines, startSeconds, endSeconds) : [];
+  const fallbackTranscript = (meetingTranscript || transcriptExcerpt || "").trim();
 
   return (
     <Card className="p-6">
@@ -50,7 +59,7 @@ export function DiscussionCard({
             />
           </div>
           <p className="bg-primary px-4 py-2 text-xs text-primary-foreground">
-            Starts at {formatTimestamp(startSeconds)}. Click play to watch this part of the meeting.
+            Starts at {formatTimestamp(startSeconds)}. Watch here, or read the transcript below.
           </p>
         </div>
       ) : showTimestamp ? (
@@ -59,11 +68,7 @@ export function DiscussionCard({
           In transcript at {formatTimestamp(startSeconds)}
         </p>
       ) : null}
-      {transcriptExcerpt ? (
-        <blockquote className="mt-5 border-l-2 border-border pl-4 text-sm leading-7 text-muted-foreground">
-          {transcriptExcerpt}
-        </blockquote>
-      ) : null}
+      <TranscriptPanel rangeLines={rangeLines} fullLines={fullLines} rawTranscript={fallbackTranscript} />
     </Card>
   );
 }

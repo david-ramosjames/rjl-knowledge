@@ -20,7 +20,7 @@ export function CategoryGrid({
             <Card className="h-full px-4 py-4 transition-colors hover:bg-muted/60">
               <div className="text-sm font-medium text-foreground">{category}</div>
               <div className="mt-1 text-xs text-muted-foreground">
-                {count} topic{count === 1 ? "" : "s"}
+                {count} item{count === 1 ? "" : "s"}
               </div>
             </Card>
           </Link>

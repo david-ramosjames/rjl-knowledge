@@ -72,8 +72,8 @@ export default async function TopicPage({
           Source discussions
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Every claim on this page traces back to a meeting. Use the source discussion — and the
-          recording when one exists — rather than treating the summary as independent advice.
+          Watch the clip or read the full transcript. The summary is only a guide — the source is
+          what the firm actually said.
         </p>
         <div className="mt-6 space-y-4">
           {topic.discussions.map((discussion) => (
@@ -84,8 +84,10 @@ export default async function TopicPage({
               speakers={discussion.speakers}
               sourceSummary={discussion.sourceSummary}
               transcriptExcerpt={discussion.transcriptExcerpt}
+              meetingTranscript={discussion.meeting.transcript}
               youtubeVideoId={discussion.meeting.youtubeVideoId}
               startSeconds={discussion.startSeconds}
+              endSeconds={discussion.endSeconds}
             />
           ))}
         </div>

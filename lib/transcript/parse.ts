@@ -39,6 +39,17 @@ export function parseTranscript(transcript: string): TranscriptLine[] {
   return parsed;
 }
 
+export function linesForRange(
+  lines: TranscriptLine[],
+  startSeconds: number,
+  endSeconds?: number | null,
+) {
+  if (lines.length === 0) return [];
+  const end = endSeconds && endSeconds > startSeconds ? endSeconds : startSeconds + 300;
+  const inRange = lines.filter((line) => line.startSeconds >= startSeconds - 5 && line.startSeconds <= end);
+  return inRange.length > 0 ? inRange : lines;
+}
+
 export function excerptForRange(
   lines: TranscriptLine[],
   startSeconds: number,

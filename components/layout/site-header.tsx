@@ -40,6 +40,9 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
               <Button asChild variant="ghost" size="sm">
                 <Link href="/admin/topics">Topics</Link>
               </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/admin/documents">Documents</Link>
+              </Button>
               {authEnabled ? (
                 <form action={logoutAction} className="flex items-center gap-2">
                   {user?.email ? (
@@ -65,7 +68,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-border/80">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-6 text-xs text-muted-foreground sm:px-6">
         <span>Knowledge Hub · Ramos James Law</span>
-        <span>Meetings are sources. Topics are the knowledge.</span>
+        <span>Meetings, documents, and firm knowledge in one hub.</span>
       </div>
     </footer>
   );
