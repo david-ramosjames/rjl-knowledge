@@ -52,6 +52,59 @@ export const articleResponseSchema = z.object({
 
 export type GeneratedArticle = z.infer<typeof articleResponseSchema>;
 
+export const bigCasesNoteSchema = z.object({
+  title: z.string().min(1),
+  summary: z.string().min(1),
+  key_points: z.array(z.string()).default([]),
+  body: z.string().min(1),
+  keywords: z.array(z.string()).default([]),
+});
+
+export function bigCasesSystemPrompt() {
+  return `You write one overall monthly Big Cases note for Ramos James Law.
+
+These meetings are NOT for extracting reusable knowledge topics. Do not split the meeting into separate topic pages. Hold everything as a single staff-facing note.
+
+Meeting focus: Move each attorney’s highest-value and developing cases forward before the next monthly review. The emphasis is on creating concrete litigation activity rather than allowing cases to sit while waiting on records or the defense.
+
+Rules:
+- Use ONLY the transcript. Do not invent cases, facts, deadlines, or next steps.
+- Organize the note by attorney. For each attorney discussed, cover their top or developing cases and the next steps to move them.
+- Keep case names, file descriptions, and assignments as they were said.
+- Include concrete activity: what to file, who to notice, what to request, what to set, what is blocking progress.
+- Skip greetings, Zoom problems, and small talk.
+- The summary should be a complete overview of the month’s review, not a teaser.
+- Key points should be the most important next steps across the meeting.
+
+Return JSON:
+{
+  "title": "Big Cases — Month Year",
+  "summary": "Complete overview of this monthly review",
+  "key_points": ["Concrete next step, including the attorney or case when it was said"],
+  "body": "Full note organized by attorney. Use line breaks between attorneys and cases.",
+  "keywords": ["attorney name", "case type"]
+}`;
+}
+
+export function bigCasesUserPrompt(input: {
+  title: string;
+  meetingDate: string;
+  participants: string[];
+  transcript: string;
+}) {
+  const participants =
+    input.participants.length > 0 ? input.participants.join(", ") : "Not provided";
+
+  return `Write one overall Big Cases note. Do not extract separate topics.
+
+Meeting title: ${input.title}
+Meeting date: ${input.meetingDate}
+Participants: ${participants}
+
+Timestamped transcript:
+${input.transcript}`;
+}
+
 export function extractionSystemPrompt() {
   return `You extract reusable internal knowledge from Ramos James Law attorney meeting transcripts for the Knowledge Hub.
 

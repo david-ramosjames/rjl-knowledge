@@ -26,10 +26,16 @@ enum CandidateStatus {
   IGNORED
 }
 
+enum MeetingKind {
+  KNOWLEDGE
+  BIG_CASES
+}
+
 model Meeting {
   id              String        @id @default(cuid())
   title           String
   meetingDate     DateTime
+  kind            MeetingKind   @default(KNOWLEDGE)
   videoUrl        String?
   youtubeVideoId  String?
   transcript      String        @db.Text
@@ -42,10 +48,12 @@ model Meeting {
 
   discussions Discussion[]
   candidates  TopicCandidate[]
+  article     Article?
 
   @@index([youtubeVideoId])
   @@index([status])
   @@index([meetingDate])
+  @@index([kind])
 }
 
 model Topic {
@@ -127,11 +135,14 @@ model Article {
   keyPoints       Json
   keywords        Json
   searchText      String      @db.Text
-  driveUrl        String
+  driveUrl        String?
   fileName        String?
+  meetingId       String?     @unique
   status          TopicStatus @default(APPROVED)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+
+  meeting Meeting? @relation(fields: [meetingId], references: [id], onDelete: SetNull)
 
   @@index([category])
   @@index([status, updatedAt])

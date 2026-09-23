@@ -166,7 +166,7 @@ async function queryArticles(q: string, category?: string): Promise<KnowledgeSea
       category: article.category,
       summary: article.summary,
       lastDiscussedAt: article.updatedAt,
-      meta: article.fileName || "Document",
+      meta: article.category === "Big Cases" ? "Big Cases" : article.fileName || "Document",
       rank: 1,
     }));
   }
@@ -222,7 +222,7 @@ async function queryArticles(q: string, category?: string): Promise<KnowledgeSea
     category: row.category,
     summary: row.summary,
     lastDiscussedAt: row.updatedAt,
-    meta: row.fileName || "Document",
+    meta: row.category === "Big Cases" ? "Big Cases" : row.fileName || "Document",
     rank: Number(row.rank),
   }));
 }
@@ -266,7 +266,7 @@ export async function getRecentKnowledge(limit = 6): Promise<KnowledgeSearchResu
       category: article.category,
       summary: article.summary,
       lastDiscussedAt: article.updatedAt,
-      meta: article.fileName || "Document",
+      meta: article.category === "Big Cases" ? "Big Cases" : article.fileName || "Document",
       rank: 1,
     })),
   ]

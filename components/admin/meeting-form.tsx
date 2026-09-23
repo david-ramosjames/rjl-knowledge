@@ -25,6 +25,35 @@ export function MeetingForm({ error }: { error?: string | null }) {
         }
       />
 
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-medium">What kind of meeting is this?</legend>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-white p-4">
+          <input
+            type="radio"
+            name="kind"
+            value="KNOWLEDGE"
+            defaultChecked
+            className="mt-1"
+          />
+          <span>
+            <span className="block text-sm font-medium">Practice knowledge</span>
+            <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+              Extract lasting legal and practice topics. Review those before they publish.
+            </span>
+          </span>
+        </label>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-white p-4">
+          <input type="radio" name="kind" value="BIG_CASES" className="mt-1" />
+          <span>
+            <span className="block text-sm font-medium">Big Cases monthly review</span>
+            <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+              Keep this as one overall note: each attorney, their top cases, and the next steps to
+              move them. Do not split into separate topics.
+            </span>
+          </span>
+        </label>
+      </fieldset>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="title">Meeting title</Label>
@@ -65,8 +94,8 @@ export function MeetingForm({ error }: { error?: string | null }) {
         />
         <p className="text-xs leading-5 text-muted-foreground">
           Paste the transcript. Timestamps like 00:31 or 01:12:42 help locate a discussion even when
-          there is no video. Processing keeps lasting legal and practice knowledge and skips action
-          items, weekly status, and other operational chatter.
+          there is no video. Practice-knowledge meetings extract lasting topics. Big Cases meetings
+          become one monthly note.
         </p>
       </div>
 

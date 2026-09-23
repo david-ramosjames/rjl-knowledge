@@ -78,7 +78,8 @@ export function optionalFileName(input: string | null | undefined): string | nul
   return raw ? raw : null;
 }
 
-export function fileHostLabel(input: string): "Dropbox" | "Google Drive" {
+export function fileHostLabel(input: string | null | undefined): "Dropbox" | "Google Drive" | "Meeting" {
+  if (!input) return "Meeting";
   return fileShareProvider(input) === "dropbox" ? "Dropbox" : "Google Drive";
 }
 

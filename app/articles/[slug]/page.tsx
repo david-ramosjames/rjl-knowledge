@@ -7,6 +7,7 @@ import { RenameArticleForm } from "@/components/admin/rename-article-form";
 import { ErrorBanner } from "@/components/error-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DiscussionCard } from "@/components/topics/discussion-card";
 import { getArticleBySlug } from "@/lib/db/articles";
 import { ErrorCodes } from "@/lib/errors";
 import { fileHostLabel } from "@/lib/file-links";
@@ -54,7 +55,7 @@ export default async function ArticlePage({
         <div>
           <div className="flex flex-wrap gap-2">
             <Badge className="bg-white">{article.category}</Badge>
-            <Badge className="bg-muted">Document</Badge>
+            <Badge className="bg-muted">{article.meeting ? "Big Cases" : "Document"}</Badge>
           </div>
           <h1 className="mt-4 font-serif text-4xl leading-tight tracking-tight sm:text-5xl">
             {article.title}
@@ -89,19 +90,41 @@ export default async function ArticlePage({
         </div>
       ) : null}
 
-      <div className="mt-8">
-        <Button asChild size="lg">
-          <a href={article.driveUrl} target="_blank" rel="noreferrer">
-            <Download className="size-4" />
-            {article.fileName
-              ? `Download ${article.fileName}`
-              : `Open / download in ${fileHostLabel(article.driveUrl)}`}
-          </a>
-        </Button>
-        <p className="mt-2 text-xs text-muted-foreground">
-          The original file is hosted on the firm’s {fileHostLabel(article.driveUrl)}.
-        </p>
-      </div>
+      {article.driveUrl ? (
+        <div className="mt-8">
+          <Button asChild size="lg">
+            <a href={article.driveUrl} target="_blank" rel="noreferrer">
+              <Download className="size-4" />
+              {article.fileName
+                ? `Download ${article.fileName}`
+                : `Open / download in ${fileHostLabel(article.driveUrl)}`}
+            </a>
+          </Button>
+          <p className="mt-2 text-xs text-muted-foreground">
+            The original file is hosted on the firm’s {fileHostLabel(article.driveUrl)}.
+          </p>
+        </div>
+      ) : null}
+
+      {article.meeting ? (
+        <section className="mt-10">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Source meeting
+          </h2>
+          <div className="mt-4">
+            <DiscussionCard
+              meetingTitle={article.meeting.title}
+              meetingDate={article.meeting.meetingDate}
+              speakers={article.meeting.participants}
+              sourceSummary="Watch or read the monthly Big Cases review. The note below is the staff summary."
+              transcriptExcerpt=""
+              meetingTranscript={article.meeting.transcript}
+              youtubeVideoId={article.meeting.youtubeVideoId}
+              startSeconds={0}
+            />
+          </div>
+        </section>
+      ) : null}
 
       <section className="mt-10">
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Overview</h2>
@@ -135,7 +158,9 @@ export default async function ArticlePage({
       ) : null}
 
       <section className="mt-12 pb-8">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Article</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          {article.meeting ? "Monthly note" : "Article"}
+        </h2>
         <div className="mt-4 space-y-5 text-base leading-8 text-foreground/90">
           {paragraphs.map((paragraph) => (
             <p key={paragraph.slice(0, 48)} className="whitespace-pre-wrap">

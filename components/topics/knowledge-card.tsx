@@ -26,7 +26,9 @@ export function KnowledgeCard({
       <Card className="h-full p-5 transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(28,25,23,0.06)]">
         <div className="mb-3 flex flex-wrap gap-2">
           <Badge className="bg-white">{category}</Badge>
-          <Badge className="bg-muted">{kind === "article" ? "Document" : "Meeting"}</Badge>
+          <Badge className="bg-muted">
+            {category === "Big Cases" ? "Big Cases" : kind === "article" ? "Document" : "Meeting"}
+          </Badge>
         </div>
         <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
         <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">{summary}</p>

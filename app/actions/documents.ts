@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { generateArticleFromDocument } from "@/lib/ai/article";
+import { processMeeting } from "@/lib/ai/process-meeting";
 import { createArticleRecord, deleteArticle, renameArticle, updateArticleRecord } from "@/lib/db/articles";
 import { prisma } from "@/lib/db/prisma";
 import { fileNameFromShareUrl, normalizeFileShareUrl, optionalFileName } from "@/lib/file-links";
@@ -108,11 +109,26 @@ export async function refreshArticleAction(formData: FormData) {
   const article = await prisma.article.findUnique({ where: { id: articleId } });
   if (!article) redirect("/admin/documents?error=refresh");
 
+  if (article.meetingId) {
+    try {
+      await processMeeting(article.meetingId, { force: true });
+    } catch (error) {
+      unstable_rethrow(error);
+      redirect(`/articles/${article.slug}?error=refresh`);
+    }
+    revalidatePath("/");
+    revalidatePath("/search");
+    revalidatePath("/admin");
+    revalidatePath("/admin/documents");
+    revalidatePath(`/articles/${article.slug}`);
+    redirect(`/articles/${article.slug}`);
+  }
+
   let ingestedText = "";
   let fileName = article.fileName;
   try {
     const ingested = await ingestDocumentSource({
-      driveUrl: article.driveUrl,
+      driveUrl: article.driveUrl ?? "",
       uploaded: file,
     });
     ingestedText = ingested.text;

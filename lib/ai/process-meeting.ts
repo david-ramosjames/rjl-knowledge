@@ -20,18 +20,24 @@ import {
   extractionUserPrompt,
   type ExtractedDiscussion,
 } from "@/lib/ai/prompts";
-import { CandidateStatus, MeetingStatus } from "@/lib/generated/prisma/client";
+import { processBigCasesMeeting } from "@/lib/ai/process-big-cases";
+import { CandidateStatus, MeetingKind, MeetingStatus } from "@/lib/generated/prisma/client";
 
 export async function processMeeting(meetingId: string, options?: { force?: boolean }) {
   const meeting = await prisma.meeting.findUnique({
     where: { id: meetingId },
     include: {
       candidates: true,
+      article: true,
     },
   });
 
   if (!meeting) {
     throw new AppError(ErrorCodes.NOT_FOUND, "Meeting not found.", 404);
+  }
+
+  if (meeting.kind === MeetingKind.BIG_CASES) {
+    return processBigCasesMeeting(meetingId, options);
   }
 
   const force = Boolean(options?.force);
@@ -140,7 +146,7 @@ export async function processMeeting(meetingId: string, options?: { force?: bool
       },
     });
 
-    return { meetingId: meeting.id, topicCount: discussions.length };
+    return { meetingId: meeting.id, topicCount: discussions.length, articleSlug: undefined as string | undefined };
   } catch (error) {
     const message =
       error instanceof AppError

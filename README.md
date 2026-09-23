@@ -250,11 +250,12 @@ Link `DATABASE_URL` from the Postgres service to the app service in the Railway 
 2. Click **Add Meeting**.
 3. Paste a transcript (`00:31 Speaker:` or `01:12:42` both work; timestamps are optional).
 4. Optionally paste an unlisted YouTube URL. Leave it blank for transcript-only meetings.
-5. Click **Process Meeting**.
-6. Review each extracted topic: **Approve**, **Edit**, or **Ignore**. Lasting knowledge is kept; action items and week-to-week operational talk should not appear.
-7. If a possible existing topic is shown, choose **Add to Existing Topic** or **Create New Topic**.
-8. Approved topics appear on the homepage and in search.
-9. On a topic page, **Watch discussion at mm:ss** opens the original video when one exists. Transcript-only sources show the excerpt instead.
+5. Choose **Practice knowledge** or **Big Cases monthly review**.
+6. Click **Process Meeting**.
+7. For practice-knowledge meetings, review each extracted topic: **Approve**, **Edit**, or **Ignore**. Lasting knowledge is kept; action items and week-to-week operational talk should not appear. Big Cases meetings publish as one note organized by attorney, top cases, and next steps.
+8. If a possible existing topic is shown, choose **Add to Existing Topic** or **Create New Topic**.
+9. Approved topics and Big Cases notes appear on the homepage and in search.
+10. On a topic page, **Watch discussion at mm:ss** opens the original video when one exists. Transcript-only sources show the excerpt instead.
 
 If OpenAI fails, the meeting and transcript are still saved. Open the meeting and click **Retry processing**.
 

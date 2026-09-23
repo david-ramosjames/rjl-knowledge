@@ -108,7 +108,11 @@ export default async function AdminPage() {
                     <td className="px-4 py-3 text-muted-foreground">{formatCompactDate(meeting.meetingDate)}</td>
                     <td className="px-4 py-3">{statusLabel(meeting.status)}</td>
                     <td className="px-4 py-3">
-                      {meeting.status === MeetingStatus.AWAITING_REVIEW || meeting.status === MeetingStatus.PROCESSED ? (
+                      {meeting.article ? (
+                        <Link href={`/articles/${meeting.article.slug}`} className="text-accent hover:underline">
+                          Open note
+                        </Link>
+                      ) : meeting.status === MeetingStatus.AWAITING_REVIEW || meeting.status === MeetingStatus.PROCESSED ? (
                         <Link href={`/admin/meetings/${meeting.id}/review`} className="text-accent hover:underline">
                           Review
                         </Link>

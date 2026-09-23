@@ -18,6 +18,7 @@ export default async function MeetingsListPage() {
               <th className="px-4 py-3 font-medium">Title</th>
               <th className="px-4 py-3 font-medium">Date</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Kind</th>
               <th className="px-4 py-3 font-medium">Topics</th>
             </tr>
           </thead>
@@ -31,7 +32,16 @@ export default async function MeetingsListPage() {
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{formatCompactDate(meeting.meetingDate)}</td>
                 <td className="px-4 py-3">{meeting.status.replaceAll("_", " ")}</td>
-                <td className="px-4 py-3">{meeting._count.candidates}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {meeting.kind === "BIG_CASES" ? "Big Cases" : "Knowledge"}
+                </td>
+                <td className="px-4 py-3">
+                  {meeting.kind === "BIG_CASES"
+                    ? meeting.article
+                      ? "Note"
+                      : "—"
+                    : meeting._count.candidates}
+                </td>
               </tr>
             ))}
           </tbody>

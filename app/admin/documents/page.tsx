@@ -92,7 +92,7 @@ export default async function AdminDocumentsPage({
                   <td className="px-4 py-3 text-muted-foreground">{article.category}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatCompactDate(article.updatedAt)}</td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {article.fileName || fileHostLabel(article.driveUrl)}
+                    {article.fileName || (article.meetingId ? "Big Cases" : fileHostLabel(article.driveUrl))}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">

@@ -21,8 +21,9 @@ export async function createArticleRecord(input: {
   body: string;
   keyPoints: string[];
   keywords: string[];
-  driveUrl: string;
+  driveUrl?: string | null;
   fileName?: string | null;
+  meetingId?: string | null;
 }) {
   const title = input.title.trim();
   if (!title) {
@@ -52,8 +53,9 @@ export async function createArticleRecord(input: {
           keyPoints,
           keywords,
         }) + `\n${body}`,
-        driveUrl: input.driveUrl,
+        driveUrl: input.driveUrl?.trim() || null,
         fileName: input.fileName?.trim() || null,
+        meetingId: input.meetingId ?? null,
         status: TopicStatus.APPROVED,
       },
     });
@@ -109,6 +111,75 @@ export async function updateArticleRecord(
   }
 }
 
+export async function upsertMeetingNoteArticle(input: {
+  meetingId: string;
+  title: string;
+  summary: string;
+  body: string;
+  keyPoints: string[];
+  keywords: string[];
+}) {
+  const title = input.title.trim();
+  if (!title) {
+    throw new AppError(ErrorCodes.VALIDATION, "An article title is required.");
+  }
+
+  const keyPoints = uniqueStrings(input.keyPoints);
+  const keywords = uniqueStrings(input.keywords);
+  const summary = input.summary.trim();
+  const body = input.body.trim();
+  if (!summary || !body) {
+    throw new AppError(ErrorCodes.OPENAI_FAILURE, "The AI did not return a complete Big Cases note.");
+  }
+
+  const searchText =
+    buildSearchText({
+      title,
+      category: "Big Cases",
+      summary,
+      keyPoints,
+      keywords,
+    }) + `\n${body}`;
+
+  const existing = await prisma.article.findUnique({ where: { meetingId: input.meetingId } });
+
+  try {
+    if (existing) {
+      return await prisma.article.update({
+        where: { id: existing.id },
+        data: {
+          title,
+          normalizedTitle: normalizeTitle(title),
+          category: "Big Cases",
+          summary,
+          body,
+          keyPoints,
+          keywords,
+          searchText,
+        },
+      });
+    }
+
+    return await prisma.article.create({
+      data: {
+        title,
+        slug: await uniqueArticleSlug(title),
+        normalizedTitle: normalizeTitle(title),
+        category: "Big Cases",
+        summary,
+        body,
+        keyPoints,
+        keywords,
+        searchText,
+        meetingId: input.meetingId,
+        status: TopicStatus.APPROVED,
+      },
+    });
+  } catch {
+    throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not save the Big Cases note. Try again.", 500);
+  }
+}
+
 export async function renameArticle(articleId: string, title: string) {
   const article = await prisma.article.findUnique({ where: { id: articleId } });
   if (!article) {
@@ -145,7 +216,10 @@ export async function renameArticle(articleId: string, title: string) {
 }
 
 export async function getArticleBySlug(slug: string) {
-  return prisma.article.findUnique({ where: { slug } });
+  return prisma.article.findUnique({
+    where: { slug },
+    include: { meeting: true },
+  });
 }
 
 export async function listArticlesForAdmin() {

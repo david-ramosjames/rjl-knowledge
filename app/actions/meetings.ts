@@ -18,6 +18,8 @@ export async function createAndProcessMeetingAction(formData: FormData) {
   const videoUrl = String(formData.get("videoUrl") ?? "").trim();
   const transcript = String(formData.get("transcript") ?? "").trim();
   const participants = parseParticipants(String(formData.get("participants") ?? ""));
+  const kindRaw = String(formData.get("kind") ?? "KNOWLEDGE").trim();
+  const kind = kindRaw === "BIG_CASES" ? "BIG_CASES" : "KNOWLEDGE";
 
   if (!title) meetingErrorRedirect(ErrorCodes.VALIDATION);
   if (!meetingDateRaw) meetingErrorRedirect(ErrorCodes.VALIDATION);
@@ -37,6 +39,7 @@ export async function createAndProcessMeetingAction(formData: FormData) {
       videoUrl,
       transcript,
       participants,
+      kind,
     });
     meetingId = meeting.id;
   } catch (error) {
@@ -53,8 +56,10 @@ export async function createAndProcessMeetingAction(formData: FormData) {
   }
 
   let processError: string | null = null;
+  let articleSlug = "";
   try {
-    await processMeeting(meetingId);
+    const result = await processMeeting(meetingId);
+    articleSlug = result.articleSlug ?? "";
   } catch (error) {
     unstable_rethrow(error);
     const code = errorCodeOf(error);
@@ -64,9 +69,14 @@ export async function createAndProcessMeetingAction(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/search");
   revalidatePath("/admin");
   if (processError) {
     redirect(`/admin/meetings/${meetingId}?error=${processError}`);
+  }
+  if (articleSlug) {
+    revalidatePath(`/articles/${articleSlug}`);
+    redirect(`/articles/${articleSlug}`);
   }
   redirect(`/admin/meetings/${meetingId}/review`);
 }
@@ -76,8 +86,10 @@ export async function retryProcessMeetingAction(formData: FormData) {
   if (!meetingId) redirect("/admin");
 
   let processError: string | null = null;
+  let articleSlug = "";
   try {
-    await processMeeting(meetingId, { force: true });
+    const result = await processMeeting(meetingId, { force: true });
+    articleSlug = result.articleSlug ?? "";
   } catch (error) {
     unstable_rethrow(error);
     const code = errorCodeOf(error);
@@ -89,9 +101,14 @@ export async function retryProcessMeetingAction(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/search");
   revalidatePath("/admin");
   if (processError) {
     redirect(`/admin/meetings/${meetingId}?error=${processError}`);
+  }
+  if (articleSlug) {
+    revalidatePath(`/articles/${articleSlug}`);
+    redirect(`/articles/${articleSlug}`);
   }
   redirect(`/admin/meetings/${meetingId}/review`);
 }

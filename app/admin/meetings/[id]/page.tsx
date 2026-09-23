@@ -38,7 +38,10 @@ export default async function MeetingDetailPage({
       <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">{meeting.title}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{formatDate(meeting.meetingDate)}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {formatDate(meeting.meetingDate)}
+            {meeting.kind === "BIG_CASES" ? " · Big Cases review" : " · Practice knowledge"}
+          </p>
         </div>
         <Badge className="bg-white">{meeting.status.replaceAll("_", " ")}</Badge>
       </div>
@@ -63,7 +66,14 @@ export default async function MeetingDetailPage({
           {meeting.participants.length ? meeting.participants.join(", ") : "Not provided"}
         </p>
         <p>
-          <span className="text-muted-foreground">Extracted topics:</span> {meeting.candidates.length}
+          <span className="text-muted-foreground">
+            {meeting.kind === "BIG_CASES" ? "Note:" : "Extracted topics:"}
+          </span>{" "}
+          {meeting.kind === "BIG_CASES"
+            ? meeting.article
+              ? meeting.article.title
+              : "Not written yet"
+            : meeting.candidates.length}
         </p>
         {meeting.videoUrl ? (
           <p className="text-xs leading-5 text-muted-foreground">
@@ -73,6 +83,11 @@ export default async function MeetingDetailPage({
       </Card>
 
       <div className="mt-6 flex flex-wrap gap-3">
+        {meeting.article ? (
+          <Button asChild>
+            <Link href={`/articles/${meeting.article.slug}`}>Open note</Link>
+          </Button>
+        ) : null}
         {meeting.candidates.length > 0 ? (
           <Button asChild>
             <Link href={`/admin/meetings/${meeting.id}/review`}>Open review</Link>
