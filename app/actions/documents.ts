@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { generateArticleFromDocument } from "@/lib/ai/article";
-import { createArticleRecord, deleteArticle, updateArticleRecord } from "@/lib/db/articles";
+import { createArticleRecord, deleteArticle, renameArticle, updateArticleRecord } from "@/lib/db/articles";
 import { prisma } from "@/lib/db/prisma";
 import { fileNameFromShareUrl, normalizeFileShareUrl, optionalFileName } from "@/lib/file-links";
 import { ingestDocumentSource } from "@/lib/ingest/document";
@@ -149,6 +149,42 @@ export async function refreshArticleAction(formData: FormData) {
   revalidatePath("/admin/documents");
   revalidatePath(`/articles/${article.slug}`);
   redirect(`/articles/${article.slug}`);
+}
+
+export async function renameArticleAction(formData: FormData) {
+  const articleId = String(formData.get("articleId") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+  if (!articleId) redirect("/admin/documents");
+
+  const existing = await prisma.article.findUnique({ where: { id: articleId } });
+  if (!existing) redirect("/admin/documents?error=rename");
+
+  if (!title) {
+    redirect(
+      returnTo.startsWith("/articles/")
+        ? `${returnTo.split("?")[0]}?error=rename`
+        : "/admin/documents?error=rename",
+    );
+  }
+
+  try {
+    await renameArticle(articleId, title);
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect(
+      returnTo.startsWith("/articles/")
+        ? `/articles/${existing.slug}?error=rename`
+        : "/admin/documents?error=rename",
+    );
+  }
+
+  revalidatePath("/");
+  revalidatePath("/search");
+  revalidatePath("/admin");
+  revalidatePath("/admin/documents");
+  revalidatePath(`/articles/${existing.slug}`);
+  redirect(returnTo.startsWith("/articles/") ? `/articles/${existing.slug}` : "/admin/documents");
 }
 
 export async function deleteArticleAction(formData: FormData) {

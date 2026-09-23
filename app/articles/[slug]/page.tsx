@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Download } from "lucide-react";
 import { DeleteArticleButton } from "@/components/admin/delete-article-button";
 import { RefreshArticleButton } from "@/components/admin/refresh-article-button";
+import { RenameArticleForm } from "@/components/admin/rename-article-form";
 import { ErrorBanner } from "@/components/error-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,13 @@ export default async function ArticlePage({
             {article.title}
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">Updated {formatDate(article.updatedAt)}</p>
+          <div className="mt-4">
+            <RenameArticleForm
+              articleId={article.id}
+              title={article.title}
+              returnTo={`/articles/${article.slug}`}
+            />
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <RefreshArticleButton articleId={article.id} />
@@ -73,7 +81,9 @@ export default async function ArticlePage({
             message={
               query.error === "refresh"
                 ? "The AI could not rewrite this article. Try Refresh again, or upload the file from Admin → Add document if the share link is not public."
-                : undefined
+                : query.error === "rename"
+                  ? "Enter a title and try saving again."
+                  : undefined
             }
           />
         </div>

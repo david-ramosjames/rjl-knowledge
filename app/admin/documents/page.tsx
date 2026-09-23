@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { DeleteArticleButton } from "@/components/admin/delete-article-button";
 import { RefreshArticleButton } from "@/components/admin/refresh-article-button";
+import { RenameArticleForm } from "@/components/admin/rename-article-form";
 import { ErrorBanner } from "@/components/error-banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,8 +31,8 @@ export default async function AdminDocumentsPage({
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Firm documents</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Guides, naming conventions, and other firm knowledge. Use Refresh article to rewrite
-            the overview and key points from the Dropbox or Drive file. Do not delete just to re-add.
+            Guides, naming conventions, and other firm knowledge. Rename a title here, or use
+            Refresh article to rewrite the overview and key points. Do not delete just to re-add.
           </p>
         </div>
         <Button asChild>
@@ -45,6 +46,11 @@ export default async function AdminDocumentsPage({
       {query.error === "delete" ? (
         <div className="mt-6">
           <ErrorBanner message="That article could not be deleted. Refresh and try again." />
+        </div>
+      ) : null}
+      {query.error === "rename" ? (
+        <div className="mt-6">
+          <ErrorBanner message="Enter a title and try saving again." />
         </div>
       ) : null}
 
@@ -75,6 +81,13 @@ export default async function AdminDocumentsPage({
                     <Link href={`/articles/${article.slug}`} className="font-medium hover:underline">
                       {article.title}
                     </Link>
+                    <div className="mt-2">
+                      <RenameArticleForm
+                        articleId={article.id}
+                        title={article.title}
+                        returnTo="/admin/documents"
+                      />
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{article.category}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatCompactDate(article.updatedAt)}</td>

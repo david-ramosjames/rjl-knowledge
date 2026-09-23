@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { TopicStatus } from "@/lib/generated/prisma/client";
 import { AppError, ErrorCodes } from "@/lib/errors";
-import { buildSearchText, normalizeTitle, slugify, uniqueStrings } from "@/lib/utils";
+import { asStringArray, buildSearchText, normalizeTitle, slugify, uniqueStrings } from "@/lib/utils";
 
 async function uniqueArticleSlug(title: string) {
   const base = slugify(title);
@@ -106,6 +106,41 @@ export async function updateArticleRecord(
     });
   } catch {
     throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not update the article. Try again.", 500);
+  }
+}
+
+export async function renameArticle(articleId: string, title: string) {
+  const article = await prisma.article.findUnique({ where: { id: articleId } });
+  if (!article) {
+    throw new AppError(ErrorCodes.NOT_FOUND, "Article not found.");
+  }
+
+  const nextTitle = title.trim();
+  if (!nextTitle) {
+    throw new AppError(ErrorCodes.VALIDATION, "An article title is required.");
+  }
+
+  const keyPoints = asStringArray(article.keyPoints);
+  const keywords = asStringArray(article.keywords);
+
+  try {
+    return await prisma.article.update({
+      where: { id: article.id },
+      data: {
+        title: nextTitle,
+        normalizedTitle: normalizeTitle(nextTitle),
+        searchText:
+          buildSearchText({
+            title: nextTitle,
+            category: article.category,
+            summary: article.summary,
+            keyPoints,
+            keywords,
+          }) + `\n${article.body}`,
+      },
+    });
+  } catch {
+    throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not rename the article. Try again.", 500);
   }
 }
 
