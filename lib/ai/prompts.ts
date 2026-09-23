@@ -87,6 +87,8 @@ DO NOT extract:
 
 If a stretch of conversation mixes a useful principle with an action item, keep the principle and drop the task list.
 
+Write complete topic pages, not teasers. Each summary should be 5–8 sentences covering the issue, the firm’s reasoning, any caveats, and the takeaway. Each topic should have 6–12 key points written as complete sentences staff can apply later. Include the why when the transcript has it.
+
 Normalize titles so similar discussions can accumulate under one durable topic name later. Example: "gap in treatment", "client stopped treating", and "treatment gaps" should map toward "Gaps in Medical Treatment". Never title a topic after a client or as Unidentified.
 
 Preferred categories (use one when it fits; otherwise a short new category is allowed):
@@ -100,8 +102,8 @@ Return JSON with this exact shape:
       "category": "Medical",
       "start_seconds": 762,
       "end_seconds": 1096,
-      "summary": "Concise description of what was discussed, using only the transcript.",
-      "key_points": ["Point directly supported by the discussion"],
+      "summary": "A complete staff-facing overview of this discussion. Write 5–8 sentences covering the issue, how the attorneys thought about it, distinctions or caveats they made, and the practical takeaway. Do not write a teaser.",
+      "key_points": ["A complete, usable sentence staff can apply later, including the why when it was said"],
       "speakers": ["Laura James", "Ryan"],
       "keywords": ["treatment gap", "medical treatment"],
       "transcript_excerpt": "Relevant source passage from the transcript",
@@ -125,6 +127,8 @@ Meeting date: ${input.meetingDate}
 Participants: ${participants}
 
 Extract reusable practice-knowledge topics. Split distinct issues. Prefer many topics over a few large ones. Do not classify or name specific cases. Skip only pure logistics and to-do lists.
+
+For each topic, write a complete overview and 6–12 key points. Staff who were not in the meeting should understand the substance, not just the headline.
 
 Timestamped transcript:
 ${input.transcript}`;
@@ -182,20 +186,22 @@ ${input.transcript}`;
 }
 
 export function synthesisSystemPrompt() {
-  return `You update an internal knowledge topic using only the firm's own meeting discussions.
+  return `You rewrite an internal Knowledge Hub topic so staff can use it without rewatching the meeting.
 
 Rules:
-- Synthesize ONLY from the provided existing topic text and source discussions.
+- Use ONLY the provided topic text and source transcripts. Those transcripts are the article.
 - Do NOT add outside legal knowledge, statutes, case law, or independent advice.
-- Preserve traceability: the overview and key points must remain faithful to what attorneys actually said.
-- Prefer durable, reusable wording. Remove duplication while keeping distinct points from different meetings.
+- The current summary and key points may be thin. Expand them. Completeness matters more than brevity.
+- Write a staff-facing overview of 2 paragraphs or 6–10 sentences. Cover the issue, how the attorneys reasoned, distinctions or caveats, and the practical takeaway.
+- Write 8–14 key points. Each must be a complete sentence staff can apply later, including the why when it was said. Do not write fragments, labels, or teasers.
+- Merge duplicates, but keep distinct ideas from different meetings.
+- Preserve traceability: every sentence must be faithful to what attorneys actually said.
 - Do not turn the topic into a task list, weekly status recap, or set of action items.
-- If the new discussion adds nothing material, keep the existing summary and key points mostly intact.
 
 Return JSON:
 {
-  "summary": "Updated overview of what RJL attorneys have discussed about this topic",
-  "key_points": ["Updated point supported by the source discussions"],
+  "summary": "Complete overview of what RJL attorneys have discussed about this topic",
+  "key_points": ["Complete, usable point supported by the source transcripts"],
   "keywords": ["keyword"]
 }`;
 }
@@ -211,13 +217,15 @@ Rules:
 - Do not mention a specific client case.
 - If a suggested title or category is provided, prefer it when it fits.
 - Category should be a firm knowledge area such as Firm Guides, Naming Conventions, IT, HR & Benefits, Onboarding, Operations, or Firm Process.
+- The summary must be complete, not a teaser: 1–2 paragraphs (at least 5 sentences) explaining what the document covers and when staff should use it.
+- Write 8–14 key points. Each is a specific rule, step, or requirement from the document, written as a complete sentence.
 
 Return JSON:
 {
   "title": "Clear document title",
   "category": "Naming Conventions",
-  "summary": "Two or three sentences describing what this document is for",
-  "key_points": ["Durable point staff should remember"],
+  "summary": "Complete overview of what this document covers and when staff should use it",
+  "key_points": ["Specific, complete rule or step staff should remember"],
   "body": "Readable article in plain paragraphs. Use line breaks for lists. Cover the important rules and steps from the source.",
   "keywords": ["naming", "files"]
 }`;

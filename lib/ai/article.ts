@@ -29,7 +29,7 @@ export async function generateArticleFromDocument(input: {
     category,
     summary: parsed.data.summary.trim(),
     body: parsed.data.body.trim(),
-    keyPoints: uniqueStrings(parsed.data.key_points).slice(0, 10),
+    keyPoints: uniqueStrings(parsed.data.key_points).slice(0, 14),
     keywords: uniqueStrings(parsed.data.keywords).slice(0, 16),
   };
 }

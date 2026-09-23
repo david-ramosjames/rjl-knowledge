@@ -227,7 +227,7 @@ async function runExtraction(messages: { role: "system" | "user"; content: strin
     .map((discussion) => ({
       ...discussion,
       category: normalizeExtractedCategory(discussion.category),
-      key_points: uniqueStrings(discussion.key_points).slice(0, 8),
+      key_points: uniqueStrings(discussion.key_points).slice(0, 14),
       keywords: uniqueStrings(discussion.keywords).slice(0, 12),
       speakers: namedSpeakers(discussion.speakers),
     }))

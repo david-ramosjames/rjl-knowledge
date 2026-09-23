@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
+import { synthesizeTopicFromDiscussions } from "@/lib/ai/synthesize";
+import { prisma } from "@/lib/db/prisma";
 import {
   addCandidateToExistingTopic,
   createTopicFromCandidate,
@@ -113,6 +115,34 @@ export async function ignoreCandidateAction(formData: FormData) {
       error: error instanceof AppError ? error.message : "Could not ignore this topic.",
     };
   }
+}
+
+export async function refreshTopicAction(formData: FormData) {
+  const topicId = String(formData.get("topicId") ?? "").trim();
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+  if (!topicId) redirect("/admin/topics");
+
+  let slug = "";
+  try {
+    const topic = await prisma.topic.findUnique({
+      where: { id: topicId },
+      select: { slug: true },
+    });
+    if (!topic) redirect("/admin/topics?error=refresh");
+    slug = topic.slug;
+    await synthesizeTopicFromDiscussions(topicId, { required: true });
+  } catch (error) {
+    unstable_rethrow(error);
+    const fallback = returnTo.startsWith("/topics/") ? `${returnTo}?error=refresh` : "/admin/topics?error=refresh";
+    redirect(fallback);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/search");
+  revalidatePath("/admin");
+  revalidatePath("/admin/topics");
+  if (slug) revalidatePath(`/topics/${slug}`);
+  redirect(returnTo.startsWith("/topics/") ? `/topics/${slug}` : "/admin/topics");
 }
 
 export async function deleteTopicAction(formData: FormData) {

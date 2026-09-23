@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteTopicButton } from "@/components/admin/delete-topic-button";
+import { RefreshTopicButton } from "@/components/admin/refresh-topic-button";
+import { ErrorBanner } from "@/components/error-banner";
 import { Badge } from "@/components/ui/badge";
 import { DiscussionCard } from "@/components/topics/discussion-card";
 import { getTopicBySlug } from "@/lib/db/topics";
 import { asStringArray, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 180;
 
 export async function generateMetadata({
   params,
@@ -22,15 +25,22 @@ export async function generateMetadata({
 
 export default async function TopicPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { slug } = await params;
+  const query = await searchParams;
   const topic = await getTopicBySlug(slug);
   if (!topic || topic.status !== "APPROVED") notFound();
 
   const keyPoints = asStringArray(topic.keyPoints);
   const lastUpdated = topic.lastDiscussedAt ?? topic.updatedAt;
+  const summaryParagraphs = topic.summary
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
@@ -43,8 +53,17 @@ export default async function TopicPage({
           <h1 className="mt-4 font-serif text-4xl leading-tight tracking-tight sm:text-5xl">{topic.title}</h1>
           <p className="mt-3 text-sm text-muted-foreground">Updated {formatDate(lastUpdated)}</p>
         </div>
-        <DeleteTopicButton topicId={topic.id} title={topic.title} />
+        <div className="flex flex-wrap gap-2">
+          <RefreshTopicButton topicId={topic.id} returnTo={`/topics/${topic.slug}`} />
+          <DeleteTopicButton topicId={topic.id} title={topic.title} />
+        </div>
       </div>
+
+      {query.error === "refresh" ? (
+        <div className="mt-6">
+          <ErrorBanner message="The AI could not rewrite this topic from the transcript. Try Refresh again in a moment." />
+        </div>
+      ) : null}
 
       <section className="mt-10">
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Key points</h2>
@@ -64,7 +83,13 @@ export default async function TopicPage({
 
       <section className="mt-12">
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Overview</h2>
-        <p className="mt-4 text-base leading-8 text-foreground/90">{topic.summary}</p>
+        <div className="mt-4 space-y-4">
+          {summaryParagraphs.map((paragraph) => (
+            <p key={paragraph.slice(0, 48)} className="text-base leading-8 text-foreground/90 whitespace-pre-wrap">
+              {paragraph}
+            </p>
+          ))}
+        </div>
       </section>
 
       <section className="mt-12 pb-8">

@@ -2,12 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Download } from "lucide-react";
 import { DeleteArticleButton } from "@/components/admin/delete-article-button";
+import { RefreshArticleButton } from "@/components/admin/refresh-article-button";
+import { ErrorBanner } from "@/components/error-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getArticleBySlug } from "@/lib/db/articles";
+import { ErrorCodes } from "@/lib/errors";
 import { asStringArray, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 180;
 
 export async function generateMetadata({
   params,
@@ -23,10 +27,13 @@ export async function generateMetadata({
 
 export default async function ArticlePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { slug } = await params;
+  const query = await searchParams;
   const article = await getArticleBySlug(slug);
   if (!article || article.status !== "APPROVED") notFound();
 
@@ -52,8 +59,24 @@ export default async function ArticlePage({
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">Updated {formatDate(article.updatedAt)}</p>
         </div>
-        <DeleteArticleButton articleId={article.id} title={article.title} />
+        <div className="flex flex-wrap gap-2">
+          <RefreshArticleButton articleId={article.id} />
+          <DeleteArticleButton articleId={article.id} title={article.title} />
+        </div>
       </div>
+
+      {query.error ? (
+        <div className="mt-6">
+          <ErrorBanner
+            code={query.error === "ingest" ? ErrorCodes.INGEST_FAILED : query.error === "refresh" ? ErrorCodes.OPENAI_FAILURE : query.error}
+            message={
+              query.error === "refresh"
+                ? "The AI could not rewrite this article. Try Refresh again, or upload the file from Admin → Add document if Drive is not shared."
+                : undefined
+            }
+          />
+        </div>
+      ) : null}
 
       <div className="mt-8">
         <Button asChild size="lg">
@@ -69,7 +92,17 @@ export default async function ArticlePage({
 
       <section className="mt-10">
         <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Overview</h2>
-        <p className="mt-4 text-base leading-8 text-foreground/90">{article.summary}</p>
+        <div className="mt-4 space-y-4">
+          {article.summary
+            .split(/\n{2,}/)
+            .map((part) => part.trim())
+            .filter(Boolean)
+            .map((paragraph) => (
+              <p key={paragraph.slice(0, 48)} className="text-base leading-8 text-foreground/90 whitespace-pre-wrap">
+                {paragraph}
+              </p>
+            ))}
+        </div>
       </section>
 
       {keyPoints.length > 0 ? (

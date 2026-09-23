@@ -62,6 +62,53 @@ export async function createArticleRecord(input: {
   }
 }
 
+export async function updateArticleRecord(
+  articleId: string,
+  input: {
+    summary: string;
+    body: string;
+    keyPoints: string[];
+    keywords: string[];
+    fileName?: string | null;
+  },
+) {
+  const article = await prisma.article.findUnique({ where: { id: articleId } });
+  if (!article) {
+    throw new AppError(ErrorCodes.NOT_FOUND, "Article not found.");
+  }
+
+  const keyPoints = uniqueStrings(input.keyPoints);
+  const keywords = uniqueStrings(input.keywords);
+  const summary = input.summary.trim();
+  const body = input.body.trim();
+  if (!summary || !body) {
+    throw new AppError(ErrorCodes.OPENAI_FAILURE, "The AI did not return a complete article.");
+  }
+
+  try {
+    return await prisma.article.update({
+      where: { id: article.id },
+      data: {
+        summary,
+        body,
+        keyPoints,
+        keywords,
+        fileName: input.fileName?.trim() || article.fileName,
+        searchText:
+          buildSearchText({
+            title: article.title,
+            category: article.category,
+            summary,
+            keyPoints,
+            keywords,
+          }) + `\n${body}`,
+      },
+    });
+  } catch {
+    throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not update the article. Try again.", 500);
+  }
+}
+
 export async function getArticleBySlug(slug: string) {
   return prisma.article.findUnique({ where: { slug } });
 }

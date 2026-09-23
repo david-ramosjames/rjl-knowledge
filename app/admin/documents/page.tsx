@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { DeleteArticleButton } from "@/components/admin/delete-article-button";
+import { RefreshArticleButton } from "@/components/admin/refresh-article-button";
 import { ErrorBanner } from "@/components/error-banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { listArticlesForAdmin } from "@/lib/db/articles";
 import { formatCompactDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 180;
 
 export default async function AdminDocumentsPage({
   searchParams,
@@ -27,8 +29,8 @@ export default async function AdminDocumentsPage({
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Firm documents</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Guides, naming conventions, and other firm knowledge. The AI ingests the document and
-            writes the searchable article. The original file stays on Google Drive.
+            Guides, naming conventions, and other firm knowledge. Use Refresh article to rewrite
+            the overview and key points from the Drive file. Do not delete just to re-add.
           </p>
         </div>
         <Button asChild>
@@ -76,8 +78,11 @@ export default async function AdminDocumentsPage({
                   <td className="px-4 py-3 text-muted-foreground">{article.category}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatCompactDate(article.updatedAt)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{article.fileName || "Google Drive"}</td>
-                  <td className="px-4 py-3 text-right">
-                    <DeleteArticleButton articleId={article.id} title={article.title} />
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-2">
+                      <RefreshArticleButton articleId={article.id} />
+                      <DeleteArticleButton articleId={article.id} title={article.title} />
+                    </div>
                   </td>
                 </tr>
               ))

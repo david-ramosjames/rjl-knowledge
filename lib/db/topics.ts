@@ -157,6 +157,7 @@ export async function createTopicFromCandidate(candidateId: string) {
     return created;
   });
 
+  await synthesizeTopicFromDiscussions(topic.id);
   await maybeMarkMeetingProcessed(candidate.meetingId);
   return topic;
 }

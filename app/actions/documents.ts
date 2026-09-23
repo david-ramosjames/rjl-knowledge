@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { generateArticleFromDocument } from "@/lib/ai/article";
-import { createArticleRecord, deleteArticle } from "@/lib/db/articles";
+import { createArticleRecord, deleteArticle, updateArticleRecord } from "@/lib/db/articles";
+import { prisma } from "@/lib/db/prisma";
 import { googleDriveFileName, normalizeGoogleDriveUrl } from "@/lib/drive";
 import { ingestDocumentSource } from "@/lib/ingest/document";
 import { normalizeCategory } from "@/lib/categories";
@@ -93,6 +94,58 @@ export async function createDocumentArticleAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/documents");
   redirect(`/articles/${slug}`);
+}
+
+export async function refreshArticleAction(formData: FormData) {
+  const articleId = String(formData.get("articleId") ?? "").trim();
+  const uploaded = formData.get("file");
+  const file = uploaded instanceof File && uploaded.size > 0 ? uploaded : null;
+  if (!articleId) redirect("/admin/documents");
+
+  const article = await prisma.article.findUnique({ where: { id: articleId } });
+  if (!article) redirect("/admin/documents?error=refresh");
+
+  let ingestedText = "";
+  let fileName = article.fileName;
+  try {
+    const ingested = await ingestDocumentSource({
+      driveUrl: article.driveUrl,
+      uploaded: file,
+    });
+    ingestedText = ingested.text;
+    fileName = fileName ?? ingested.fileName ?? null;
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect(`/articles/${article.slug}?error=ingest`);
+  }
+
+  if (!ingestedText.trim()) redirect(`/articles/${article.slug}?error=ingest`);
+
+  try {
+    const generated = await generateArticleFromDocument({
+      title: article.title,
+      category: article.category,
+      fileName,
+      sourceText: ingestedText,
+    });
+    await updateArticleRecord(article.id, {
+      summary: generated.summary,
+      body: generated.body,
+      keyPoints: generated.keyPoints,
+      keywords: generated.keywords,
+      fileName,
+    });
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect(`/articles/${article.slug}?error=refresh`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/search");
+  revalidatePath("/admin");
+  revalidatePath("/admin/documents");
+  revalidatePath(`/articles/${article.slug}`);
+  redirect(`/articles/${article.slug}`);
 }
 
 export async function deleteArticleAction(formData: FormData) {
