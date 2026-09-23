@@ -10,25 +10,25 @@ export default async function HomePage() {
   const [items, categories] = await Promise.all([getRecentKnowledge(6), getUsedCategories()]);
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
       <section className="mx-auto max-w-3xl text-center">
-        <RjlLogo className="mx-auto" />
-        <h1 className="mt-6 font-serif text-5xl tracking-tight text-primary sm:text-6xl">
+        <RjlLogo className="mx-auto h-20 w-32 rounded-xl sm:h-24 sm:w-40" />
+        <h1 className="mt-4 font-serif text-4xl tracking-tight text-primary sm:text-5xl">
           Knowledge Hub
         </h1>
-        <p className="mt-4 text-lg text-muted-foreground sm:text-xl">
+        <p className="mt-2 text-base text-muted-foreground sm:text-lg">
           Search meetings, guides, and other knowledge about Ramos James Law.
         </p>
-        <div className="mt-10">
-          <SearchBar autoFocus />
+        <div className="mt-6">
+          <SearchBar size="md" autoFocus />
         </div>
       </section>
 
-      <section className="mt-16">
+      <section className="mt-12">
         <div className="mb-5 flex items-end justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Recent knowledge
+              Recently added
             </h2>
           </div>
         </div>
