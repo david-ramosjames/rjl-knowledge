@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { namedSpeakers } from "@/lib/utils";
 import { formatTimestamp } from "@/lib/youtube";
-import type { TranscriptLine } from "@/lib/transcript/parse";
+import { stripSpokenTimestamp, type TranscriptLine } from "@/lib/transcript/parse";
 
 export function TranscriptPanel({
   rangeLines,
@@ -53,7 +53,11 @@ export function TranscriptPanel({
         </div>
       ) : raw ? (
         <pre className="mt-4 max-h-128 overflow-y-auto whitespace-pre-wrap rounded-xl border border-border bg-muted/30 px-4 py-4 text-sm leading-7">
-          {raw}
+          {raw
+            .split(/\r?\n/)
+            .map((line) => stripSpokenTimestamp(line))
+            .filter(Boolean)
+            .join("\n")}
         </pre>
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">No transcript is available for this source.</p>

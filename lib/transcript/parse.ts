@@ -10,6 +10,17 @@ export type TranscriptLine = {
 const TIMESTAMP_RE =
   /(?:\[|\()?((?:\d{1,2}:)?\d{1,2}:\d{2})(?:\]|\))?(?:\s*[-–—]\s*)?/;
 
+const SPOKEN_TIMESTAMP_RE =
+  /^(?:(?:\d{1,2}\s*hours?,?\s+)?\d{1,3}\s*minutes?,?\s+\d{1,2}\s*seconds?\.?\s*)+/i;
+
+export function stripSpokenTimestamp(text: string) {
+  return text
+    .trim()
+    .replace(/^(?:\d{1,2}:)?\d{1,2}:\d{2}(?:\s*[-–—]\s*)?/, "")
+    .replace(SPOKEN_TIMESTAMP_RE, "")
+    .trim();
+}
+
 export function parseTranscript(transcript: string): TranscriptLine[] {
   const lines = transcript
     .split(/\r?\n/)
@@ -25,13 +36,16 @@ export function parseTranscript(transcript: string): TranscriptLine[] {
     const startSeconds = parseTimestampToSeconds(match[1]);
     if (startSeconds === null) continue;
 
-    const remainder = line.slice(match.index + match[0].length).trim();
+    const remainder = stripSpokenTimestamp(line.slice(match.index + match[0].length).trim());
+    if (!remainder) continue;
     const speakerMatch = remainder.match(/^([^:]{1,80}):\s*(.*)$/);
+    const text = stripSpokenTimestamp(speakerMatch ? speakerMatch[2].trim() : remainder);
+    if (!text) continue;
 
     parsed.push({
       startSeconds,
       speaker: speakerMatch ? speakerMatch[1].trim() : null,
-      text: speakerMatch ? speakerMatch[2].trim() : remainder,
+      text,
       raw: line,
     });
   }
