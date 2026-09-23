@@ -5,7 +5,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { generateArticleFromDocument } from "@/lib/ai/article";
 import { createArticleRecord, deleteArticle, updateArticleRecord } from "@/lib/db/articles";
 import { prisma } from "@/lib/db/prisma";
-import { googleDriveFileName, normalizeGoogleDriveUrl } from "@/lib/drive";
+import { fileNameFromShareUrl, normalizeFileShareUrl, optionalFileName } from "@/lib/file-links";
 import { ingestDocumentSource } from "@/lib/ingest/document";
 import { normalizeCategory } from "@/lib/categories";
 import { AppError, ErrorCodes } from "@/lib/errors";
@@ -23,9 +23,12 @@ export async function createDocumentArticleAction(formData: FormData) {
   const file =
     uploaded instanceof File && uploaded.size > 0 ? uploaded : null;
   const pastedText = String(formData.get("sourceText") ?? "").trim();
-  let fileName = googleDriveFileName(String(formData.get("fileName") ?? "")) ?? file?.name ?? null;
+  let fileName =
+    optionalFileName(String(formData.get("fileName") ?? "")) ??
+    file?.name ??
+    fileNameFromShareUrl(driveUrlRaw);
 
-  const driveUrl = normalizeGoogleDriveUrl(driveUrlRaw);
+  const driveUrl = normalizeFileShareUrl(driveUrlRaw);
   if (!driveUrl) documentErrorRedirect(ErrorCodes.INVALID_DRIVE_URL);
 
   let ingestedText = "";

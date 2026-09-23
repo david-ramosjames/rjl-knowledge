@@ -17,7 +17,7 @@ This is an internal application, not a public marketing site. Treat every transc
 3. The admin reviews, edits, ignores, or merges those topics.
 4. Approved topics appear in the Knowledge Hub.
 5. Attorneys and staff can search or browse, open a topic, and jump to the original discussion — including a timestamped watch link when a video was attached.
-6. Admins can also add firm documents (Drive link plus optional upload). The AI ingests the file and publishes a searchable article; staff download the original from Drive.
+6. Admins can also add firm documents (Dropbox or Drive link plus optional upload). The AI ingests the file and publishes a searchable article; staff download the original from that link.
 
 The model is instructed to summarize **only** the transcript. It must not add outside legal knowledge or independent legal advice.
 
@@ -261,9 +261,9 @@ If OpenAI fails, the meeting and transcript are still saved. Open the meeting an
 To add a firm guide or naming convention:
 
 1. Open `/admin/documents/new`.
-2. Paste a Google Drive link (share it so anyone with the link can view).
-3. Upload the file if Drive sharing is restricted, or for PDFs and Word documents.
-4. Click **Ingest and publish**. The AI reads the document and writes the searchable article. Staff download the original from Drive.
+2. Paste a Dropbox or Google Drive link (share it so anyone with the link can view).
+3. Upload the file if sharing is restricted, or for PDFs and Word documents.
+4. Click **Ingest and publish**. The AI reads the document and writes the searchable article. Staff download the original from Dropbox or Drive.
 
 ## Architecture
 

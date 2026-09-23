@@ -6,6 +6,7 @@ import { ErrorBanner } from "@/components/error-banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { listArticlesForAdmin } from "@/lib/db/articles";
+import { fileHostLabel } from "@/lib/file-links";
 import { formatCompactDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export default async function AdminDocumentsPage({
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Firm documents</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Guides, naming conventions, and other firm knowledge. Use Refresh article to rewrite
-            the overview and key points from the Drive file. Do not delete just to re-add.
+            the overview and key points from the Dropbox or Drive file. Do not delete just to re-add.
           </p>
         </div>
         <Button asChild>
@@ -64,7 +65,7 @@ export default async function AdminDocumentsPage({
             {articles.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-muted-foreground">
-                  No documents yet. Add a Google Drive guide to get started.
+                  No documents yet. Add a Dropbox or Google Drive guide to get started.
                 </td>
               </tr>
             ) : (
@@ -77,7 +78,9 @@ export default async function AdminDocumentsPage({
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{article.category}</td>
                   <td className="px-4 py-3 text-muted-foreground">{formatCompactDate(article.updatedAt)}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{article.fileName || "Google Drive"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {article.fileName || fileHostLabel(article.driveUrl)}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <RefreshArticleButton articleId={article.id} />

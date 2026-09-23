@@ -1,4 +1,5 @@
 import { driveExportUrl, parseGoogleDriveUrl } from "@/lib/drive";
+import { dropboxDownloadUrls, fileNameFromShareUrl, normalizeDropboxUrl } from "@/lib/file-links";
 import { AppError, ErrorCodes } from "@/lib/errors";
 
 const MAX_CHARS = 80_000;
@@ -18,8 +19,8 @@ export async function ingestDocumentSource(input: {
     return extractUploadedFile(input.uploaded);
   }
 
-  const fromDrive = await fetchGoogleDriveText(input.driveUrl);
-  if (fromDrive?.text) return fromDrive;
+  const fromLink = await fetchSharedFileText(input.driveUrl);
+  if (fromLink?.text) return fromLink;
 
   const pasted = input.pastedText?.trim();
   if (pasted) {
@@ -28,49 +29,61 @@ export async function ingestDocumentSource(input: {
 
   throw new AppError(
     ErrorCodes.INGEST_FAILED,
-    "The AI could not open that Drive file. Share it with anyone who has the link, or upload the file so it can be ingested.",
+    "The AI could not open that file. Share the Dropbox or Drive link so anyone with the link can view it, or upload the file so it can be ingested.",
   );
 }
 
-async function fetchGoogleDriveText(driveUrl: string): Promise<IngestedDocument | null> {
-  const resource = parseGoogleDriveUrl(driveUrl);
-  if (!resource) return null;
+async function fetchSharedFileText(fileUrl: string): Promise<IngestedDocument | null> {
+  const drive = parseGoogleDriveUrl(fileUrl);
+  const dropbox = normalizeDropboxUrl(fileUrl);
+  const urls = drive ? driveExportUrl(drive) : dropbox ? dropboxDownloadUrls(dropbox) : [];
+  if (urls.length === 0) return null;
 
-  for (const url of driveExportUrl(resource)) {
-    try {
-      const response = await fetch(url, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(20_000),
-        headers: {
-          "User-Agent": "RJL-Knowledge-Hub/1.0",
-        },
-      });
-      if (!response.ok) continue;
+  const fallbackName = drive
+    ? `${drive.kind}.bin`
+    : fileNameFromShareUrl(fileUrl) ?? "document.bin";
 
-      const contentType = response.headers.get("content-type") ?? "";
-      const bytes = Buffer.from(await response.arrayBuffer());
-      if (bytes.length === 0) continue;
-
-      if (looksLikeHtml(contentType, bytes)) continue;
-
-      const fileName = fileNameFromDisposition(response.headers.get("content-disposition"));
-      const text = await extractBytes(bytes, contentType, fileName ?? `${resource.kind}.bin`);
-      if (text.trim()) {
-        return { text: clipText(text), fileName: fileName ?? undefined };
-      }
-    } catch {
-      continue;
-    }
+  for (const url of urls) {
+    const fetched = await fetchRemoteFile(url, fallbackName);
+    if (fetched) return fetched;
   }
 
   return null;
+}
+
+async function fetchRemoteFile(url: string, fallbackName: string): Promise<IngestedDocument | null> {
+  try {
+    const response = await fetch(url, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(20_000),
+      headers: {
+        "User-Agent": "RJL-Knowledge-Hub/1.0",
+      },
+    });
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get("content-type") ?? "";
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (bytes.length === 0) return null;
+    if (looksLikeHtml(contentType, bytes)) return null;
+
+    const fileName =
+      fileNameFromDisposition(response.headers.get("content-disposition")) ??
+      fileNameFromShareUrl(url) ??
+      fallbackName;
+    const text = await extractBytes(bytes, contentType, fileName);
+    if (!text.trim()) return null;
+    return { text: clipText(text), fileName };
+  } catch {
+    return null;
+  }
 }
 
 async function extractUploadedFile(file: File): Promise<IngestedDocument> {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new AppError(
       ErrorCodes.INGEST_FAILED,
-      "That file is larger than 12 MB. Upload a smaller file, or share a Drive link the hub can read.",
+      "That file is larger than 12 MB. Upload a smaller file, or share a Dropbox or Drive link the hub can read.",
     );
   }
 

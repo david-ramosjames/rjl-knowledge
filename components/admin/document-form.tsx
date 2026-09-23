@@ -21,16 +21,17 @@ export function DocumentForm({ error }: { error?: string | null }) {
       />
 
       <div className="space-y-2">
-        <Label htmlFor="driveUrl">Google Drive link</Label>
+        <Label htmlFor="driveUrl">Dropbox or Google Drive link</Label>
         <Input
           id="driveUrl"
           name="driveUrl"
           required
-          placeholder="https://drive.google.com/file/d/..."
+          placeholder="https://www.dropbox.com/scl/fi/..."
         />
         <p className="text-xs leading-5 text-muted-foreground">
-          Host the original in Drive. Share it so anyone with the link can view it. The AI will read
-          the file and write the searchable article. Staff still download from Drive.
+          Host the original in Dropbox or Google Drive. Share it so anyone with the link can view it.
+          The AI will read the file and write the searchable article. Staff still download from that
+          link.
         </p>
       </div>
 
@@ -43,7 +44,7 @@ export function DocumentForm({ error }: { error?: string | null }) {
           accept=".pdf,.doc,.docx,.txt,.md,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
         />
         <p className="text-xs leading-5 text-muted-foreground">
-          Recommended for PDFs and Word files, or if Drive sharing is restricted. The AI uses this
+          Recommended for PDFs and Word files, or if the share link is restricted. The AI uses this
           file to write the article.
         </p>
       </div>

@@ -60,9 +60,9 @@ export function errorMessageFromCode(code: string, fallback?: string): string {
     case ErrorCodes.NOT_FOUND:
       return "We could not find that record.";
     case ErrorCodes.INVALID_DRIVE_URL:
-      return "Paste a Google Drive or Google Docs link so people can download the original file.";
+      return "Paste a Dropbox, Google Drive, or Google Docs share link so people can download the original file.";
     case ErrorCodes.INGEST_FAILED:
-      return "The hub could not read that document. Share the Drive file with anyone at the firm who has the link, or upload the file so the AI can ingest it.";
+      return "The hub could not read that document. Share the Dropbox or Drive file so anyone with the link can view it, or upload the file so the AI can ingest it.";
     default:
       return fallback || "Something went wrong. Try again.";
   }

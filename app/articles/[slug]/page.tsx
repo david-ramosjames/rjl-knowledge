@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getArticleBySlug } from "@/lib/db/articles";
 import { ErrorCodes } from "@/lib/errors";
+import { fileHostLabel } from "@/lib/file-links";
 import { asStringArray, formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -71,7 +72,7 @@ export default async function ArticlePage({
             code={query.error === "ingest" ? ErrorCodes.INGEST_FAILED : query.error === "refresh" ? ErrorCodes.OPENAI_FAILURE : query.error}
             message={
               query.error === "refresh"
-                ? "The AI could not rewrite this article. Try Refresh again, or upload the file from Admin → Add document if Drive is not shared."
+                ? "The AI could not rewrite this article. Try Refresh again, or upload the file from Admin → Add document if the share link is not public."
                 : undefined
             }
           />
@@ -82,11 +83,13 @@ export default async function ArticlePage({
         <Button asChild size="lg">
           <a href={article.driveUrl} target="_blank" rel="noreferrer">
             <Download className="size-4" />
-            {article.fileName ? `Download ${article.fileName}` : "Open / download in Google Drive"}
+            {article.fileName
+              ? `Download ${article.fileName}`
+              : `Open / download in ${fileHostLabel(article.driveUrl)}`}
           </a>
         </Button>
         <p className="mt-2 text-xs text-muted-foreground">
-          The original file is hosted on the firm’s Google Drive.
+          The original file is hosted on the firm’s {fileHostLabel(article.driveUrl)}.
         </p>
       </div>
 

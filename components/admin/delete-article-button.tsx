@@ -16,7 +16,7 @@ export function DeleteArticleButton({
     <form
       action={deleteArticleAction}
       onSubmit={(event) => {
-        if (!window.confirm(`Delete “${title}” from the Knowledge Hub? The Google Drive file is not deleted.`)) {
+        if (!window.confirm(`Delete “${title}” from the Knowledge Hub? The original Dropbox or Drive file is not deleted.`)) {
           event.preventDefault();
         }
       }}
