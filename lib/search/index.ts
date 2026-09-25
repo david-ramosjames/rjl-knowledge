@@ -3,6 +3,12 @@
 // ranking can be added later without changing page contracts.
 import { prisma } from "@/lib/db/prisma";
 import { Prisma, TopicStatus } from "@/lib/generated/prisma/client";
+import { articleKindLabel } from "@/lib/meetings/kinds";
+
+function articleKindMeta(category: string, fileName?: string | null) {
+  const label = articleKindLabel({ category });
+  return label !== "Document" ? label : fileName || "Document";
+}
 
 export type KnowledgeKind = "topic" | "article";
 
@@ -166,7 +172,7 @@ async function queryArticles(q: string, category?: string): Promise<KnowledgeSea
       category: article.category,
       summary: article.summary,
       lastDiscussedAt: article.updatedAt,
-      meta: article.category === "Big Cases" ? "Big Cases" : article.fileName || "Document",
+      meta: articleKindMeta(article.category, article.fileName),
       rank: 1,
     }));
   }
@@ -222,7 +228,7 @@ async function queryArticles(q: string, category?: string): Promise<KnowledgeSea
     category: row.category,
     summary: row.summary,
     lastDiscussedAt: row.updatedAt,
-    meta: row.category === "Big Cases" ? "Big Cases" : row.fileName || "Document",
+    meta: articleKindMeta(row.category, row.fileName),
     rank: Number(row.rank),
   }));
 }
@@ -266,7 +272,7 @@ export async function getRecentKnowledge(limit = 6): Promise<KnowledgeSearchResu
       category: article.category,
       summary: article.summary,
       lastDiscussedAt: article.updatedAt,
-      meta: article.category === "Big Cases" ? "Big Cases" : article.fileName || "Document",
+      meta: articleKindMeta(article.category, article.fileName),
       rank: 1,
     })),
   ]
@@ -331,7 +337,7 @@ export async function getRelatedKnowledge({
       category: article.category,
       summary: article.summary,
       lastDiscussedAt: article.updatedAt,
-      meta: article.category === "Big Cases" ? "Big Cases" : article.fileName || "Document",
+      meta: articleKindMeta(article.category, article.fileName),
       rank: 1,
     })),
   ]

@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { processMeeting } from "@/lib/ai/process-meeting";
 import { createMeetingRecord } from "@/lib/db/meetings";
 import { errorCodeOf, errorMeetingIdOf, ErrorCodes } from "@/lib/errors";
+import { parseMeetingKind } from "@/lib/meetings/kinds";
 import { parseParticipants } from "@/lib/utils";
 
 function meetingErrorRedirect(code: string, extra?: Record<string, string>) {
@@ -20,8 +21,7 @@ export async function createAndProcessMeetingAction(formData: FormData) {
   const videoUrl = String(formData.get("videoUrl") ?? "").trim();
   const transcript = String(formData.get("transcript") ?? "").trim();
   const participants = parseParticipants(String(formData.get("participants") ?? ""));
-  const kindRaw = String(formData.get("kind") ?? "KNOWLEDGE").trim();
-  const kind = kindRaw === "BIG_CASES" ? "BIG_CASES" : "KNOWLEDGE";
+  const kind = parseMeetingKind(String(formData.get("kind") ?? "KNOWLEDGE"));
 
   if (!title) meetingErrorRedirect(ErrorCodes.VALIDATION);
   if (!meetingDateRaw) meetingErrorRedirect(ErrorCodes.VALIDATION);

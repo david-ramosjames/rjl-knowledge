@@ -29,6 +29,7 @@ enum CandidateStatus {
 enum MeetingKind {
   KNOWLEDGE
   BIG_CASES
+  NEW_CASES
 }
 
 model Meeting {

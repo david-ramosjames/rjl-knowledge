@@ -17,7 +17,8 @@ export default async function NewMeetingPage({
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Add meeting</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Save the source first. Practice-knowledge meetings extract topics for review. Big Cases
-        meetings publish as one overall note. A YouTube URL is optional when there is no recording.
+        and New Cases Review meetings publish as one overall note. A YouTube URL is optional when
+        there is no recording.
       </p>
       <div className="mt-8">
         <MeetingForm error={error} />

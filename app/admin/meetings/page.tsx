@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { listMeetings } from "@/lib/db/meetings";
+import { isReviewMeetingKind, meetingKindLabel } from "@/lib/meetings/kinds";
 import { formatCompactDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -33,10 +34,10 @@ export default async function MeetingsListPage() {
                 <td className="px-4 py-3 text-muted-foreground">{formatCompactDate(meeting.meetingDate)}</td>
                 <td className="px-4 py-3">{meeting.status.replaceAll("_", " ")}</td>
                 <td className="px-4 py-3 text-muted-foreground">
-                  {meeting.kind === "BIG_CASES" ? "Big Cases" : "Knowledge"}
+                  {meetingKindLabel(meeting.kind)}
                 </td>
                 <td className="px-4 py-3">
-                  {meeting.kind === "BIG_CASES"
+                  {isReviewMeetingKind(meeting.kind)
                     ? meeting.article
                       ? "Note"
                       : "—"

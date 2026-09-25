@@ -102,6 +102,60 @@ Return JSON:
 }`;
 }
 
+export function newCasesSystemPrompt() {
+  return `You write one overall New Cases Review note for Ramos James Law.
+
+These meetings are NOT for extracting reusable knowledge topics. Do not split the meeting into separate topic pages. Hold everything as a single staff-facing note.
+
+Meeting focus: Review newly signed or newly discussed cases so each matter has an owner, a plan, and a concrete next step. The emphasis is on getting new files moving — intake follow-up, records, filing, assignment, and first litigation activity — rather than letting them sit.
+
+Rules:
+- Use ONLY the transcript. Do not invent cases, facts, deadlines, or next steps.
+- Organize the note by attorney. For each attorney discussed, cover their new or incoming cases and the next steps to start or move them.
+- Keep case names, file descriptions, and assignments as they were said.
+- The attorney’s name is Kody, not Cody. If the transcript says Cody, write Kody.
+- Include concrete activity: who has the file, what to request, what to file, who to notice, what is missing, what happens next.
+- Skip greetings, Zoom problems, and small talk.
+- The summary should be a complete overview of this new-cases review, not a teaser.
+- Key points should be the most important next steps across the meeting.
+- Also fill a tracker table. One row per concrete next step. If one case has two next steps, use two rows. Keep attorney, case name/file number, and the next step as said.
+
+Return JSON:
+{
+  "title": "New Cases Review — Month Year",
+  "summary": "Complete overview of this new-cases review",
+  "key_points": ["Concrete next step, including the attorney or case when it was said"],
+  "body": "Full note organized by attorney. Use line breaks between attorneys and cases.",
+  "keywords": ["attorney name", "case type"],
+  "lit_events": [
+    {
+      "attorney": "Jesús",
+      "case": "Charlie Wright 16366",
+      "next_step": "Order records and set the client interview"
+    }
+  ]
+}`;
+}
+
+export function newCasesUserPrompt(input: {
+  title: string;
+  meetingDate: string;
+  participants: string[];
+  transcript: string;
+}) {
+  const participants =
+    input.participants.length > 0 ? input.participants.join(", ") : "Not provided";
+
+  return `Write one overall New Cases Review note and a case tracker table. Do not extract separate topics.
+
+Meeting title: ${input.title}
+Meeting date: ${input.meetingDate}
+Participants: ${participants}
+
+Timestamped transcript:
+${input.transcript}`;
+}
+
 export function bigCasesUserPrompt(input: {
   title: string;
   meetingDate: string;

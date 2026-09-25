@@ -1,12 +1,22 @@
 import { Card } from "@/components/ui/card";
 import type { LitEventRow } from "@/lib/utils";
 
-export function LitEventsTable({ id, rows }: { id?: string; rows: LitEventRow[] }) {
+export function LitEventsTable({
+  id,
+  title = "Upcoming lit events",
+  stepLabel = "Lit event / next step",
+  rows,
+}: {
+  id?: string;
+  title?: string;
+  stepLabel?: string;
+  rows: LitEventRow[];
+}) {
   if (rows.length === 0) return null;
 
   return (
     <section>
-      <h2 id={id}>Upcoming lit events</h2>
+      <h2 id={id}>{title}</h2>
       <p>
         Attorney, case, and the next concrete step from this review.
       </p>
@@ -16,7 +26,7 @@ export function LitEventsTable({ id, rows }: { id?: string; rows: LitEventRow[] 
             <tr>
               <th className="px-4 py-3 font-medium">Attorney</th>
               <th className="px-4 py-3 font-medium">Case</th>
-              <th className="px-4 py-3 font-medium">Lit event / next step</th>
+              <th className="px-4 py-3 font-medium">{stepLabel}</th>
             </tr>
           </thead>
           <tbody>

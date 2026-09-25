@@ -17,6 +17,7 @@ export const DEFAULT_CATEGORIES = [
   "Onboarding",
   "Operations",
   "Big Cases",
+  "New Cases",
   "Other",
 ] as const;
 
@@ -59,6 +60,9 @@ const CATEGORY_ALIASES: Record<string, DefaultCategory> = {
   operations: "Operations",
   "big cases": "Big Cases",
   "case review": "Big Cases",
+  "new cases": "New Cases",
+  "new case review": "New Cases",
+  "new cases review": "New Cases",
   other: "Other",
   unidentified: "Other",
   unknown: "Other",

@@ -52,6 +52,16 @@ export function MeetingForm({ error }: { error?: string | null }) {
             </span>
           </span>
         </label>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-white p-4">
+          <input type="radio" name="kind" value="NEW_CASES" className="mt-1" />
+          <span>
+            <span className="block text-sm font-medium">New Cases Review</span>
+            <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+              Keep this as one overall note: each attorney, their new or incoming cases, and the
+              next steps to get those files moving. Do not split into separate topics.
+            </span>
+          </span>
+        </label>
       </fieldset>
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -94,8 +104,8 @@ export function MeetingForm({ error }: { error?: string | null }) {
         />
         <p className="text-xs leading-5 text-muted-foreground">
           Paste the transcript. Timestamps like 00:31 or 01:12:42 help locate a discussion even when
-          there is no video. Practice-knowledge meetings extract lasting topics. Big Cases meetings
-          become one monthly note.
+          there is no video. Practice-knowledge meetings extract lasting topics. Big Cases and New
+          Cases Review meetings become one overall note.
         </p>
       </div>
 

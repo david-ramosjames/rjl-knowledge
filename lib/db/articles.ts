@@ -113,6 +113,7 @@ export async function updateArticleRecord(
 
 export async function upsertMeetingNoteArticle(input: {
   meetingId: string;
+  category: string;
   title: string;
   summary: string;
   body: string;
@@ -133,16 +134,17 @@ export async function upsertMeetingNoteArticle(input: {
   const summary = input.summary.trim();
   const body = input.body.trim();
   if (!summary || !body) {
-    throw new AppError(ErrorCodes.OPENAI_FAILURE, "The AI did not return a complete Big Cases note.");
+    throw new AppError(ErrorCodes.OPENAI_FAILURE, "The AI did not return a complete review note.");
   }
 
+  const category = input.category.trim() || "Other";
   const trackerText = litEvents
     .map((row) => `${row.attorney} ${row.caseName} ${row.nextStep}`)
     .join("\n");
   const searchText =
     buildSearchText({
       title,
-      category: "Big Cases",
+      category,
       summary,
       keyPoints,
       keywords,
@@ -157,7 +159,7 @@ export async function upsertMeetingNoteArticle(input: {
         data: {
           title,
           normalizedTitle: normalizeTitle(title),
-          category: "Big Cases",
+          category,
           summary,
           body,
           keyPoints,
@@ -173,7 +175,7 @@ export async function upsertMeetingNoteArticle(input: {
         title,
         slug: await uniqueArticleSlug(title),
         normalizedTitle: normalizeTitle(title),
-        category: "Big Cases",
+        category,
         summary,
         body,
         keyPoints,
@@ -185,7 +187,7 @@ export async function upsertMeetingNoteArticle(input: {
       },
     });
   } catch {
-    throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not save the Big Cases note. Try again.", 500);
+    throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not save the review note. Try again.", 500);
   }
 }
 

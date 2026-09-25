@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
-import { CandidateStatus, MeetingKind, MeetingStatus } from "@/lib/generated/prisma/client";
+import { toPrismaMeetingKind, type MeetingKindInput } from "@/lib/meetings/kinds";
+import { CandidateStatus, MeetingStatus } from "@/lib/generated/prisma/client";
 import { AppError, ErrorCodes } from "@/lib/errors";
 import { extractYouTubeVideoId, canonicalYouTubeUrl } from "@/lib/youtube";
 
@@ -47,7 +48,7 @@ export async function createMeetingRecord(input: {
   videoUrl: string;
   transcript: string;
   participants: string[];
-  kind?: "KNOWLEDGE" | "BIG_CASES";
+  kind?: MeetingKindInput;
 }) {
   if (!input.transcript.trim()) {
     throw new AppError(ErrorCodes.MISSING_TRANSCRIPT, "Paste a transcript.");
@@ -84,7 +85,7 @@ export async function createMeetingRecord(input: {
       data: {
         title: input.title.trim(),
         meetingDate: input.meetingDate,
-        kind: input.kind === "BIG_CASES" ? MeetingKind.BIG_CASES : MeetingKind.KNOWLEDGE,
+        kind: toPrismaMeetingKind(input.kind),
         videoUrl,
         youtubeVideoId,
         transcript: input.transcript.trim(),

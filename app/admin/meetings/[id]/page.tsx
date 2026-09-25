@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getMeetingForReview } from "@/lib/db/meetings";
+import { isReviewMeetingKind, meetingKindLabel } from "@/lib/meetings/kinds";
 import { formatDate } from "@/lib/utils";
 import { MeetingStatus } from "@/lib/generated/prisma/client";
 
@@ -40,7 +41,9 @@ export default async function MeetingDetailPage({
           <h1 className="text-3xl font-semibold tracking-tight">{meeting.title}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {formatDate(meeting.meetingDate)}
-            {meeting.kind === "BIG_CASES" ? " · Big Cases review" : " · Practice knowledge"}
+            {isReviewMeetingKind(meeting.kind)
+              ? ` · ${meetingKindLabel(meeting.kind)} review`
+              : " · Practice knowledge"}
           </p>
         </div>
         <Badge className="bg-white">{meeting.status.replaceAll("_", " ")}</Badge>
@@ -67,9 +70,9 @@ export default async function MeetingDetailPage({
         </p>
         <p>
           <span className="text-muted-foreground">
-            {meeting.kind === "BIG_CASES" ? "Note:" : "Extracted topics:"}
+            {isReviewMeetingKind(meeting.kind) ? "Note:" : "Extracted topics:"}
           </span>{" "}
-          {meeting.kind === "BIG_CASES"
+          {isReviewMeetingKind(meeting.kind)
             ? meeting.article
               ? meeting.article.title
               : "Not written yet"

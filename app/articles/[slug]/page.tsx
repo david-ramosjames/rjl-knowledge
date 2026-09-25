@@ -13,6 +13,7 @@ import { getArticleBySlug } from "@/lib/db/articles";
 import { ErrorCodes } from "@/lib/errors";
 import { headingId, type KnowledgeHeading } from "@/lib/knowledge/headings";
 import { outdatedReportHref } from "@/lib/knowledge/report";
+import { articleKindLabel, trackerHeading } from "@/lib/meetings/kinds";
 import { getRelatedKnowledge } from "@/lib/search";
 import { asLitEvents, asStringArray, formatDate } from "@/lib/utils";
 
@@ -61,7 +62,8 @@ export default async function ArticlePage({
   };
 
   const overviewId = addHeading("Overview");
-  const litEventsId = litEvents.length > 0 ? addHeading("Upcoming lit events") : null;
+  const trackerTitle = trackerHeading(article.category);
+  const litEventsId = litEvents.length > 0 ? addHeading(trackerTitle) : null;
   const keyPointsId = keyPoints.length > 0 ? addHeading("Key points") : null;
   const bodyHeading = article.meeting ? "Monthly note" : "Article";
   const bodyId = addHeading(bodyHeading);
@@ -74,7 +76,7 @@ export default async function ArticlePage({
       backHref="/documents"
       backLabel="Documents"
       category={article.category}
-      kindLabel={article.meeting ? "Big Cases" : "Document"}
+      kindLabel={articleKindLabel({ category: article.category, meetingKind: article.meeting?.kind })}
       title={article.title}
       updatedLabel={`Updated ${formatDate(article.updatedAt)}`}
       sourceUrl={article.driveUrl}
@@ -142,7 +144,14 @@ export default async function ArticlePage({
       <h2 id={overviewId}>Overview</h2>
       <RichNote text={article.summary} />
 
-      {litEventsId ? <LitEventsTable id={litEventsId} rows={litEvents} /> : null}
+      {litEventsId ? (
+        <LitEventsTable
+          id={litEventsId}
+          title={trackerTitle}
+          stepLabel={article.category === "New Cases" ? "Next step" : "Lit event / next step"}
+          rows={litEvents}
+        />
+      ) : null}
 
       {keyPointsId ? (
         <>
@@ -167,7 +176,7 @@ export default async function ArticlePage({
             meetingTitle={article.meeting.title}
             meetingDate={article.meeting.meetingDate}
             speakers={article.meeting.participants}
-            sourceSummary="Watch or read the monthly Big Cases review. The note above is the staff summary."
+            sourceSummary={`Watch or read the ${articleKindLabel({ category: article.category, meetingKind: article.meeting.kind })} review. The note above is the staff summary.`}
             transcriptExcerpt=""
             meetingTranscript={article.meeting.transcript}
             youtubeVideoId={article.meeting.youtubeVideoId}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { articleKindLabel } from "@/lib/meetings/kinds";
 import { formatCompactDate } from "@/lib/utils";
 import type { KnowledgeKind } from "@/lib/search";
 
@@ -20,7 +21,8 @@ export function KnowledgeCard({
   lastDiscussedAt?: Date | string | null;
   meta?: string;
 }) {
-  const kindLabel = category === "Big Cases" ? "Big Cases" : kind === "article" ? "Document" : "Meeting";
+  const reviewLabel = articleKindLabel({ category });
+  const kindLabel = reviewLabel !== "Document" ? reviewLabel : kind === "article" ? "Document" : "Meeting";
   const dateLabel = lastDiscussedAt ? formatCompactDate(lastDiscussedAt) : null;
 
   return (
