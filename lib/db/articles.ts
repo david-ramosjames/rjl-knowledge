@@ -285,9 +285,18 @@ export async function getArticleBySlug(slug: string) {
   });
 }
 
-export async function listPublishedArticles() {
+export async function listPublishedArticles(options?: {
+  category?: string;
+  excludeCategories?: string[];
+}) {
   return prisma.article.findMany({
-    where: { status: TopicStatus.APPROVED },
+    where: {
+      status: TopicStatus.APPROVED,
+      ...(options?.category ? { category: options.category } : {}),
+      ...(options?.excludeCategories?.length
+        ? { category: { notIn: options.excludeCategories } }
+        : {}),
+    },
     orderBy: [{ updatedAt: "desc" }, { title: "asc" }],
   });
 }

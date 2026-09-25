@@ -1,4 +1,4 @@
-import { KnowledgeCard } from "@/components/topics/knowledge-card";
+import { ArticleIndex } from "@/components/knowledge/article-index";
 import { listPublishedArticles } from "@/lib/db/articles";
 
 export const dynamic = "force-dynamic";
@@ -8,35 +8,16 @@ export const metadata = {
 };
 
 export default async function DocumentsPage() {
-  const articles = await listPublishedArticles();
+  const articles = await listPublishedArticles({
+    excludeCategories: ["Big Cases", "New Cases"],
+  });
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
-      <h1 className="text-3xl font-semibold tracking-tight">Documents</h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Guides, naming conventions, Big Cases and New Cases notes, and other firm documents.
-      </p>
-
-      {articles.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-dashed border-border px-5 py-8 text-sm text-muted-foreground">
-          No documents published yet.
-        </p>
-      ) : (
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {articles.map((article) => (
-            <KnowledgeCard
-              key={article.id}
-              kind="article"
-              title={article.title}
-              href={`/articles/${article.slug}`}
-              category={article.category}
-              summary={article.summary}
-              lastDiscussedAt={article.updatedAt}
-              meta={article.fileName || undefined}
-            />
-          ))}
-        </div>
-      )}
-    </main>
+    <ArticleIndex
+      title="Documents"
+      description="Guides, naming conventions, and other firm documents."
+      empty="No documents published yet."
+      articles={articles}
+    />
   );
 }

@@ -21,14 +21,14 @@ export async function SiteHeader({ variant = "hub" }: { variant?: "hub" | "admin
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-wrap items-center justify-between gap-y-2 px-4 py-2 sm:px-6">
         <Link href="/" aria-label="Knowledge Hub home" className="flex items-center gap-3">
           <RjlLogo variant="mark" decorative />
           <span className="whitespace-nowrap font-serif text-xl tracking-tight text-primary sm:text-2xl">
             Knowledge Hub
           </span>
         </Link>
-        <nav className="flex items-center gap-1 text-sm">
+        <nav className="-mx-1 flex max-w-full items-center gap-1 overflow-x-auto text-sm">
           {signedIn ? (
             <>
               <HubNav />

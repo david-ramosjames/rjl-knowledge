@@ -62,6 +62,8 @@ export default async function ArticlePage({
   };
 
   const overviewId = addHeading("Overview");
+  const kindLabel = articleKindLabel({ category: article.category, meetingKind: article.meeting?.kind });
+  const backHref = kindLabel === "New Cases" ? "/new-cases" : kindLabel === "Big Cases" ? "/big-cases" : "/documents";
   const trackerTitle = trackerHeading(article.category);
   const litEventsId = litEvents.length > 0 ? addHeading(trackerTitle) : null;
   const keyPointsId = keyPoints.length > 0 ? addHeading("Key points") : null;
@@ -73,10 +75,10 @@ export default async function ArticlePage({
 
   return (
     <KnowledgePage
-      backHref="/documents"
-      backLabel="Documents"
+      backHref={backHref}
+      backLabel={kindLabel === "Document" ? "Documents" : kindLabel}
       category={article.category}
-      kindLabel={articleKindLabel({ category: article.category, meetingKind: article.meeting?.kind })}
+      kindLabel={kindLabel}
       title={article.title}
       updatedLabel={`Updated ${formatDate(article.updatedAt)}`}
       sourceUrl={article.driveUrl}
