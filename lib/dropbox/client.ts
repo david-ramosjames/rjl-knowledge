@@ -115,6 +115,32 @@ type ListEntry = {
   path_lower?: string;
 };
 
+export function toNamespaceRelativePath(path: string) {
+  let normalized = path.trim();
+  if (!normalized) return defaultDropboxFolderPath();
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // keep the raw path if it is not URI-encoded
+  }
+  if (!normalized.startsWith("/")) normalized = `/${normalized}`;
+
+  const root = defaultDropboxFolderPath();
+  if (!root) return normalized;
+
+  const lower = normalized.toLowerCase();
+  const rootLower = root.toLowerCase();
+  const at = lower.indexOf(rootLower);
+  if (at >= 0) {
+    const sliced = normalized.slice(at);
+    return sliced.startsWith("/") ? sliced : `/${sliced}`;
+  }
+
+  const parts = normalized.split("/").filter(Boolean);
+  if (parts.length === 1) return `${root}/${parts[0]}`;
+  return normalized;
+}
+
 export function parseDropboxScanSource(raw: string): { folderPath?: string; folderUrl?: string } {
   const trimmed = raw.trim();
   if (!trimmed) return { folderPath: defaultDropboxFolderPath() };
@@ -127,7 +153,7 @@ export function parseDropboxScanSource(raw: string): { folderPath?: string; fold
       const url = new URL(trimmed);
       if (url.hostname.toLowerCase().includes("dropbox.com")) {
         const stripped = url.pathname.replace(/^\/(home|work)/i, "");
-        return { folderPath: decodeURIComponent(stripped) };
+        return { folderPath: toNamespaceRelativePath(stripped) };
       }
     } catch {
       throw new AppError(ErrorCodes.VALIDATION, "That Dropbox location could not be parsed.");
@@ -135,7 +161,7 @@ export function parseDropboxScanSource(raw: string): { folderPath?: string; fold
     throw new AppError(ErrorCodes.VALIDATION, "Paste a Dropbox folder path or shared folder link.");
   }
 
-  return { folderPath: trimmed.startsWith("/") ? trimmed : `/${trimmed}` };
+  return { folderPath: toNamespaceRelativePath(trimmed) };
 }
 
 export async function listDropboxFiles(input: { folderPath?: string; folderUrl?: string }) {

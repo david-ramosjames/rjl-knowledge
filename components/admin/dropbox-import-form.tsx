@@ -23,7 +23,7 @@ export function DropboxImportForm({
   configured: boolean;
   defaultFolder?: string;
 }) {
-  const [source, setSource] = useState(defaultFolder ?? "");
+  const [source, setSource] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
   const [scanned, setScanned] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -103,12 +103,14 @@ export function DropboxImportForm({
             id="dropbox-source"
             value={source}
             onChange={(event) => setSource(event.target.value)}
-            placeholder={defaultFolder || "/Firm Knowledge or a shared folder link"}
+            placeholder={defaultFolder ? `${defaultFolder}/FORMS` : "/RAMOS JAMES LAW CASES/FORMS"}
             disabled={!configured || scanning || running}
           />
           <p className="text-xs leading-5 text-muted-foreground">
-            Blank uses DROPBOX_CASES_ROOT when that is set. Files in named folders get that
-            category; loose files let the AI choose. PDF, Word, and text files only.
+            Paste a Dropbox /home URL or a path under the cases root. A URL like
+            …/RAMOS JAMES LAW CASES/FORMS is scanned as that subfolder, not the whole drive.
+            Folder names become categories; loose files let the AI choose. PDF, Word, and text
+            files only.
           </p>
         </div>
         <Button type="submit" disabled={!configured || scanning || running}>
