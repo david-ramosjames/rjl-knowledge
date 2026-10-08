@@ -2,7 +2,15 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pg", "openai", "@prisma/client", "@prisma/adapter-pg", "unpdf", "mammoth"],
+  serverExternalPackages: [
+    "pg",
+    "openai",
+    "@prisma/client",
+    "@prisma/adapter-pg",
+    "unpdf",
+    "mammoth",
+    "@napi-rs/canvas",
+  ],
   experimental: {
     serverActions: {
       bodySizeLimit: "50mb",

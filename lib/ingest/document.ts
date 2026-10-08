@@ -1,11 +1,6 @@
 import { driveExportUrl, parseGoogleDriveUrl } from "@/lib/drive";
 import { dropboxDownloadUrls, fileNameFromShareUrl, normalizeDropboxUrl } from "@/lib/file-links";
 import { AppError, ErrorCodes } from "@/lib/errors";
-import {
-  hasUsableDocumentText,
-  isPdfFile,
-  renderPdfPagesForVision,
-} from "@/lib/ingest/pdf-pages";
 import type { SlideUpload } from "@/lib/ingest/slides";
 
 const MAX_CHARS = 80_000;
@@ -113,6 +108,7 @@ export async function ingestFileBuffer(
   }
 
   if (isPdfFile(fileName, contentType)) {
+    const { renderPdfPagesForVision } = await import("@/lib/ingest/pdf-pages");
     const pages = await renderPdfPagesForVision(bytes);
     if (pages.length > 0) {
       return { text: "", fileName, pages };
@@ -186,4 +182,12 @@ function fileNameFromDisposition(header: string | null) {
 
 function clipText(text: string) {
   return text.trim().slice(0, MAX_CHARS);
+}
+
+function isPdfFile(fileName: string, contentType = "") {
+  return fileName.toLowerCase().endsWith(".pdf") || contentType.toLowerCase().includes("pdf");
+}
+
+function hasUsableDocumentText(text: string) {
+  return text.replace(/[^a-zA-Z]/g, "").length >= 180;
 }
