@@ -5,6 +5,7 @@ import { EditArticleForm } from "@/components/admin/edit-article-form";
 import { RenameArticleForm } from "@/components/admin/rename-article-form";
 import { ErrorBanner } from "@/components/error-banner";
 import { LitEventsTable } from "@/components/articles/lit-events-table";
+import { SlideGallery } from "@/components/articles/slide-gallery";
 import { extractNoteHeadings, InlineMarkdown, RichNote } from "@/components/articles/rich-note";
 import { KnowledgePage } from "@/components/knowledge/knowledge-page";
 import { DiscussionCard } from "@/components/topics/discussion-card";
@@ -61,7 +62,9 @@ export default async function ArticlePage({
     return id;
   };
 
+  const slides = article.slides ?? [];
   const overviewId = addHeading("Overview");
+  const slidesId = slides.length > 0 ? addHeading("Slides") : null;
   const kindLabel = articleKindLabel({ category: article.category, meetingKind: article.meeting?.kind });
   const backHref = kindLabel === "New Cases" ? "/new-cases" : kindLabel === "Big Cases" ? "/big-cases" : "/documents";
   const trackerTitle = trackerHeading(article.category);
@@ -145,6 +148,13 @@ export default async function ArticlePage({
 
       <h2 id={overviewId}>Overview</h2>
       <RichNote text={article.summary} />
+
+      {slidesId ? (
+        <>
+          <h2 id={slidesId}>Slides</h2>
+          <SlideGallery slug={article.slug} slides={slides} />
+        </>
+      ) : null}
 
       {litEventsId ? (
         <LitEventsTable

@@ -41,7 +41,18 @@ export function extractJsonObject(text: string): unknown {
   }
 }
 
-export async function completeJson(messages: { role: "system" | "user"; content: string }[]) {
+type TextMessage = { role: "system" | "user"; content: string };
+type VisionMessage =
+  | { role: "system"; content: string }
+  | {
+      role: "user";
+      content: Array<
+        | { type: "text"; text: string }
+        | { type: "image_url"; image_url: { url: string } }
+      >;
+    };
+
+export async function completeJson(messages: TextMessage[] | VisionMessage[]) {
   const client = getOpenAIClient();
 
   try {

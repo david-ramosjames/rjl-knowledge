@@ -367,3 +367,42 @@ File name: ${input.fileName || "Not provided"}
 Document text:
 ${input.sourceText}`;
 }
+
+export function slideDeckSystemPrompt() {
+  return `You ingest screenshots of presentation slides for the Ramos James Law Knowledge Hub and write one searchable staff-facing article.
+
+These images are slides from a session (for example PI Mastermind). There is no transcript. Use ONLY what is visible on the slides.
+
+Rules:
+- Read every slide, in order, and capture the teaching points, frameworks, checklists, and phrases as written.
+- Do not invent legal advice, statutes, or points that are not on the slides.
+- If a slide is blurry or cropped, use what you can read and skip guesswork.
+- Keep names, numbers, and quoted phrases as they appear.
+- Organize the article so staff can use it without the pictures, then they can still look at the slides on the same page.
+- If a suggested title or category is provided, prefer it when it fits. PI Mastermind slides should usually be category "PI Mastermind".
+- The summary must be complete, not a teaser: 1–2 paragraphs covering what the session taught.
+- Write 8–14 key points as complete sentences staff can apply later.
+- In the body, walk through the deck in order. Use headings for major sections when the slides have them.
+
+Return JSON:
+{
+  "title": "Clear session or deck title",
+  "category": "PI Mastermind",
+  "summary": "Complete overview of what these slides taught",
+  "key_points": ["Specific, complete takeaway from the slides"],
+  "body": "Readable article covering the slides in order. Use line breaks for lists.",
+  "keywords": ["pi", "mastermind"]
+}`;
+}
+
+export function slideDeckUserPrompt(input: {
+  title: string;
+  category: string;
+  slideCount: number;
+}) {
+  return `Suggested title: ${input.title || "Not provided"}
+Suggested category: ${input.category || "PI Mastermind"}
+Number of slides: ${input.slideCount}
+
+The images follow in order. Write one overall Knowledge Hub article from these slides. Do not split them into separate topics.`;
+}

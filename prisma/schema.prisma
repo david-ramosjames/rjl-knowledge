@@ -145,8 +145,22 @@ model Article {
   updatedAt       DateTime    @updatedAt
 
   meeting Meeting? @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  slides  ArticleSlide[]
 
   @@index([category])
   @@index([status, updatedAt])
   @@index([normalizedTitle])
+}
+
+model ArticleSlide {
+  id        String @id @default(cuid())
+  articleId String
+  sortOrder Int
+  fileName  String
+  mimeType  String
+  bytes     Bytes
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId, sortOrder])
 }

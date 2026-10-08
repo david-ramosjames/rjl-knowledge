@@ -3,18 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { generateArticleFromDocument } from "@/lib/ai/article";
+import { generateArticleFromSlides } from "@/lib/ai/slides";
 import { requireAdmin } from "@/lib/auth/admin";
 import { processMeeting } from "@/lib/ai/process-meeting";
 import {
   createArticleRecord,
   deleteArticle,
+  listArticleSlideBytes,
   renameArticle,
+  replaceArticleSlides,
   updateArticleContent,
   updateArticleRecord,
 } from "@/lib/db/articles";
 import { prisma } from "@/lib/db/prisma";
 import { fileNameFromShareUrl, normalizeFileShareUrl, optionalFileName } from "@/lib/file-links";
 import { ingestDocumentSource } from "@/lib/ingest/document";
+import { collectSlideUploads } from "@/lib/ingest/slides";
 import { normalizeCategory } from "@/lib/categories";
 import { AppError, ErrorCodes } from "@/lib/errors";
 
@@ -32,53 +36,75 @@ export async function createDocumentArticleAction(formData: FormData) {
   const file =
     uploaded instanceof File && uploaded.size > 0 ? uploaded : null;
   const pastedText = String(formData.get("sourceText") ?? "").trim();
-  let fileName =
-    optionalFileName(String(formData.get("fileName") ?? "")) ??
-    file?.name ??
-    fileNameFromShareUrl(driveUrlRaw);
-
-  const driveUrl = normalizeFileShareUrl(driveUrlRaw);
-  if (!driveUrl) documentErrorRedirect(ErrorCodes.INVALID_DRIVE_URL);
-
-  let ingestedText = "";
+  let slides;
   try {
-    const ingested = await ingestDocumentSource({
-      driveUrl,
-      uploaded: file,
-      pastedText,
-    });
-    ingestedText = ingested.text;
-    fileName = fileName ?? ingested.fileName ?? null;
+    slides = await collectSlideUploads(formData);
   } catch (error) {
     unstable_rethrow(error);
     documentErrorRedirect(error instanceof AppError ? error.code : ErrorCodes.INGEST_FAILED);
   }
 
-  if (!ingestedText.trim()) documentErrorRedirect(ErrorCodes.INGEST_FAILED);
+  const driveUrl = driveUrlRaw ? normalizeFileShareUrl(driveUrlRaw) : null;
+  if (driveUrlRaw && !driveUrl) documentErrorRedirect(ErrorCodes.INVALID_DRIVE_URL);
+  if (slides.length === 0 && !file && !driveUrl && !pastedText) {
+    documentErrorRedirect(ErrorCodes.VALIDATION);
+  }
+
+  let fileName =
+    optionalFileName(String(formData.get("fileName") ?? "")) ??
+    (slides.length > 0 ? `${slides.length} slides` : null) ??
+    file?.name ??
+    fileNameFromShareUrl(driveUrlRaw);
 
   let publishedTitle = titleHint;
-  let publishedCategory = categoryHint || "Firm Guides";
+  let publishedCategory = categoryHint || (slides.length > 0 ? "PI Mastermind" : "Firm Guides");
   let summary = "";
   let body = "";
   let keyPoints: string[] = [];
   let keywords: string[] = [];
 
   try {
-    const generated = await generateArticleFromDocument({
-      title: titleHint,
-      category: categoryHint,
-      fileName,
-      sourceText: ingestedText,
-    });
-    publishedTitle = generated.title || titleHint || fileName || "Firm document";
-    publishedCategory = generated.category || publishedCategory;
-    summary = generated.summary;
-    body = generated.body;
-    keyPoints = generated.keyPoints;
-    keywords = generated.keywords;
+    if (slides.length > 0) {
+      const generated = await generateArticleFromSlides({
+        title: titleHint,
+        category: categoryHint || "PI Mastermind",
+        slides,
+      });
+      publishedTitle = generated.title || titleHint || fileName || "Slide deck";
+      publishedCategory = generated.category || publishedCategory;
+      summary = generated.summary;
+      body = generated.body;
+      keyPoints = generated.keyPoints;
+      keywords = generated.keywords;
+    } else {
+      const ingested = await ingestDocumentSource({
+        driveUrl: driveUrl ?? "",
+        uploaded: file,
+        pastedText,
+      });
+      fileName = fileName ?? ingested.fileName ?? null;
+      const generated = await generateArticleFromDocument({
+        title: titleHint,
+        category: categoryHint,
+        fileName,
+        sourceText: ingested.text,
+      });
+      publishedTitle = generated.title || titleHint || fileName || "Firm document";
+      publishedCategory = generated.category || publishedCategory;
+      summary = generated.summary;
+      body = generated.body;
+      keyPoints = generated.keyPoints;
+      keywords = generated.keywords;
+    }
   } catch (error) {
     unstable_rethrow(error);
-    documentErrorRedirect(error instanceof AppError ? error.code : ErrorCodes.OPENAI_FAILURE);
+    documentErrorRedirect(
+      error instanceof AppError
+        ? error.code
+        : slides.length > 0
+          ? ErrorCodes.OPENAI_FAILURE
+          : ErrorCodes.INGEST_FAILED,
+    );
   }
 
   if (!body) documentErrorRedirect(ErrorCodes.OPENAI_FAILURE);
@@ -96,6 +122,9 @@ export async function createDocumentArticleAction(formData: FormData) {
       fileName,
     });
     slug = article.slug;
+    if (slides.length > 0) {
+      await replaceArticleSlides(article.id, slides);
+    }
   } catch (error) {
     unstable_rethrow(error);
     documentErrorRedirect(error instanceof AppError ? error.code : ErrorCodes.DATABASE_FAILURE);
@@ -133,39 +162,50 @@ export async function refreshArticleAction(formData: FormData) {
     redirect(`/articles/${article.slug}`);
   }
 
-  let ingestedText = "";
+  const storedSlides = await listArticleSlideBytes(article.id);
   let fileName = article.fileName;
   try {
-    const ingested = await ingestDocumentSource({
-      driveUrl: article.driveUrl ?? "",
-      uploaded: file,
-    });
-    ingestedText = ingested.text;
-    fileName = fileName ?? ingested.fileName ?? null;
+    if (storedSlides.length > 0) {
+      const generated = await generateArticleFromSlides({
+        title: article.title,
+        category: article.category,
+        slides: storedSlides.map((slide) => ({
+          fileName: slide.fileName,
+          mimeType: slide.mimeType,
+          bytes: Buffer.from(slide.bytes),
+        })),
+      });
+      await updateArticleRecord(article.id, {
+        summary: generated.summary,
+        body: generated.body,
+        keyPoints: generated.keyPoints,
+        keywords: generated.keywords,
+        fileName,
+      });
+    } else {
+      const ingested = await ingestDocumentSource({
+        driveUrl: article.driveUrl ?? "",
+        uploaded: file,
+      });
+      fileName = fileName ?? ingested.fileName ?? null;
+      if (!ingested.text.trim()) redirect(`/articles/${article.slug}?error=ingest`);
+      const generated = await generateArticleFromDocument({
+        title: article.title,
+        category: article.category,
+        fileName,
+        sourceText: ingested.text,
+      });
+      await updateArticleRecord(article.id, {
+        summary: generated.summary,
+        body: generated.body,
+        keyPoints: generated.keyPoints,
+        keywords: generated.keywords,
+        fileName,
+      });
+    }
   } catch (error) {
     unstable_rethrow(error);
-    redirect(`/articles/${article.slug}?error=ingest`);
-  }
-
-  if (!ingestedText.trim()) redirect(`/articles/${article.slug}?error=ingest`);
-
-  try {
-    const generated = await generateArticleFromDocument({
-      title: article.title,
-      category: article.category,
-      fileName,
-      sourceText: ingestedText,
-    });
-    await updateArticleRecord(article.id, {
-      summary: generated.summary,
-      body: generated.body,
-      keyPoints: generated.keyPoints,
-      keywords: generated.keywords,
-      fileName,
-    });
-  } catch (error) {
-    unstable_rethrow(error);
-    redirect(`/articles/${article.slug}?error=refresh`);
+    redirect(`/articles/${article.slug}?error=${storedSlides.length > 0 ? "refresh" : "ingest"}`);
   }
 
   revalidatePath("/");

@@ -281,8 +281,48 @@ export async function renameArticle(articleId: string, title: string) {
 export async function getArticleBySlug(slug: string) {
   return prisma.article.findUnique({
     where: { slug },
-    include: { meeting: true },
+    include: {
+      meeting: true,
+      slides: {
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, fileName: true, mimeType: true, sortOrder: true },
+      },
+    },
   });
+}
+
+export async function listArticleSlideBytes(articleId: string) {
+  return prisma.articleSlide.findMany({
+    where: { articleId },
+    orderBy: { sortOrder: "asc" },
+  });
+}
+
+export async function getArticleSlide(slug: string, slideId: string) {
+  return prisma.articleSlide.findFirst({
+    where: {
+      id: slideId,
+      article: { slug, status: TopicStatus.APPROVED },
+    },
+  });
+}
+
+export async function replaceArticleSlides(
+  articleId: string,
+  slides: { fileName: string; mimeType: string; bytes: Buffer }[],
+) {
+  await prisma.$transaction([
+    prisma.articleSlide.deleteMany({ where: { articleId } }),
+    prisma.articleSlide.createMany({
+      data: slides.map((slide, index) => ({
+        articleId,
+        sortOrder: index,
+        fileName: slide.fileName,
+        mimeType: slide.mimeType,
+        bytes: Uint8Array.from(slide.bytes),
+      })),
+    }),
+  ]);
 }
 
 export async function listPublishedArticles(options?: {

@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["pg", "openai", "@prisma/client", "@prisma/adapter-pg", "unpdf", "mammoth"],
   experimental: {
     serverActions: {
-      bodySizeLimit: "16mb",
+      bodySizeLimit: "50mb",
     },
   },
   turbopack: {
