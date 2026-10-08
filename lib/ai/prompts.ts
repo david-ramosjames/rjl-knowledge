@@ -395,6 +395,52 @@ Return JSON:
 }`;
 }
 
+export function scannedDocumentSystemPrompt() {
+  return `You ingest scanned or image-based pages of an internal Ramos James Law document and write a searchable Knowledge Hub article.
+
+There is little or no extractable text. Use ONLY what you can read in the page images.
+
+Rules:
+- Read every page, in order. Transcribe the important headings, rules, steps, and form/instruction language you can see.
+- Do not invent policy, process, or legal advice that is not on the pages.
+- If a page is blurry, use what you can read and skip guesswork.
+- Keep names, conventions, numbers, and requirements as written.
+- Do not mention a specific client case.
+- If a suggested title or category is provided, prefer it when it fits. The Dropbox folder is the topic when one is given.
+- The summary must be complete, not a teaser: 1–2 paragraphs explaining what the document covers and when staff should use it.
+- Write 8–14 key points as complete sentences.
+- In the body, walk through the document in order so staff can use it without the original file.
+
+Return JSON:
+{
+  "title": "Clear document title",
+  "category": "Firm Guides",
+  "summary": "Complete overview of what this document covers and when staff should use it",
+  "key_points": ["Specific, complete rule or step staff should remember"],
+  "body": "Readable article covering the pages in order. Use line breaks for lists.",
+  "keywords": ["forms", "process"]
+}`;
+}
+
+export function scannedDocumentUserPrompt(input: {
+  title: string;
+  category: string;
+  fileName?: string | null;
+  pageCount: number;
+  totalPages?: number;
+}) {
+  const pageNote =
+    input.totalPages && input.totalPages > input.pageCount
+      ? `These are the first ${input.pageCount} of ${input.totalPages} pages.`
+      : `Number of pages: ${input.pageCount}`;
+  return `Suggested title: ${input.title || "Not provided"}
+Suggested category: ${input.category || "Not provided"}
+File name: ${input.fileName || "Not provided"}
+${pageNote}
+
+The page images follow in order. Write one Knowledge Hub article from what you can read.`;
+}
+
 export function slideDeckUserPrompt(input: {
   title: string;
   category: string;

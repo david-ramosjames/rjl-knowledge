@@ -1,6 +1,12 @@
 import { driveExportUrl, parseGoogleDriveUrl } from "@/lib/drive";
 import { dropboxDownloadUrls, fileNameFromShareUrl, normalizeDropboxUrl } from "@/lib/file-links";
 import { AppError, ErrorCodes } from "@/lib/errors";
+import {
+  hasUsableDocumentText,
+  isPdfFile,
+  renderPdfPagesForVision,
+} from "@/lib/ingest/pdf-pages";
+import type { SlideUpload } from "@/lib/ingest/slides";
 
 const MAX_CHARS = 80_000;
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
@@ -8,6 +14,7 @@ const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
 export type IngestedDocument = {
   text: string;
   fileName?: string;
+  pages?: SlideUpload[];
 };
 
 export async function ingestDocumentSource(input: {
@@ -71,32 +78,15 @@ async function fetchRemoteFile(url: string, fallbackName: string): Promise<Inges
       fileNameFromDisposition(response.headers.get("content-disposition")) ??
       fileNameFromShareUrl(url) ??
       fallbackName;
-    const text = await extractFileBytes(bytes, contentType, fileName);
-    if (!text.trim()) return null;
-    return { text: clipText(text), fileName };
+    return ingestFileBuffer(bytes, fileName, contentType);
   } catch {
     return null;
   }
 }
 
 async function extractUploadedFile(file: File): Promise<IngestedDocument> {
-  if (file.size > MAX_UPLOAD_BYTES) {
-    throw new AppError(
-      ErrorCodes.INGEST_FAILED,
-      "That file is larger than 12 MB. Upload a smaller file, or share a Dropbox or Drive link the hub can read.",
-    );
-  }
-
   const bytes = Buffer.from(await file.arrayBuffer());
-  const text = await extractFileBytes(bytes, file.type, file.name);
-  if (!text.trim()) {
-    throw new AppError(
-      ErrorCodes.INGEST_FAILED,
-      "The AI could not read any text from that file. Try a PDF, Word document, Google Doc, or plain text file.",
-    );
-  }
-
-  return { text: clipText(text), fileName: file.name };
+  return ingestFileBuffer(bytes, file.name, file.type);
 }
 
 export async function ingestFileBuffer(
@@ -111,15 +101,28 @@ export async function ingestFileBuffer(
     );
   }
 
-  const text = await extractFileBytes(bytes, contentType, fileName);
-  if (!text.trim()) {
-    throw new AppError(
-      ErrorCodes.INGEST_FAILED,
-      "The AI could not read any text from that file. Try a PDF, Word document, or plain text file.",
-    );
+  let text = "";
+  try {
+    text = await extractFileBytes(bytes, contentType, fileName);
+  } catch (error) {
+    if (!isPdfFile(fileName, contentType)) throw error;
   }
 
-  return { text: clipText(text), fileName };
+  if (hasUsableDocumentText(text)) {
+    return { text: clipText(text), fileName };
+  }
+
+  if (isPdfFile(fileName, contentType)) {
+    const pages = await renderPdfPagesForVision(bytes);
+    if (pages.length > 0) {
+      return { text: "", fileName, pages };
+    }
+  }
+
+  throw new AppError(
+    ErrorCodes.INGEST_FAILED,
+    "The AI could not read any text from that file. Try a PDF, Word document, or plain text file.",
+  );
 }
 
 export async function extractFileBytes(bytes: Buffer, contentType: string, fileName: string) {
@@ -152,10 +155,7 @@ export async function extractFileBytes(bytes: Buffer, contentType: string, fileN
       const extracted = await extractText(pdf, { mergePages: true });
       return extracted.text || "";
     } catch {
-      throw new AppError(
-        ErrorCodes.INGEST_FAILED,
-        "This PDF could not be read. It may be scanned images or use fonts the hub cannot parse.",
-      );
+      return "";
     }
   }
 

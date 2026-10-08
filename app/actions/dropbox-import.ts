@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
-import { generateArticleFromDocument } from "@/lib/ai/article";
+import { generateArticleFromIngested } from "@/lib/ai/article";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createArticleRecord, findArticleByImportKey, listArticleImportKeys } from "@/lib/db/articles";
 import {
@@ -97,11 +97,11 @@ export async function importDropboxFileAction(
     }
     const ingested = await ingestFileBuffer(downloaded.bytes, downloaded.name, downloaded.contentType);
     const titleHint = fileStemTitle(downloaded.name);
-    const generated = await generateArticleFromDocument({
+    const generated = await generateArticleFromIngested({
       title: titleHint,
       category: file.category,
       fileName: downloaded.name,
-      sourceText: ingested.text,
+      ingested,
     });
 
     const title = generated.title || titleHint || downloaded.name;

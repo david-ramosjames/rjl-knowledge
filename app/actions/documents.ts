@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
-import { generateArticleFromDocument } from "@/lib/ai/article";
+import { generateArticleFromIngested } from "@/lib/ai/article";
 import { generateArticleFromSlides } from "@/lib/ai/slides";
 import { requireAdmin } from "@/lib/auth/admin";
 import { processMeeting } from "@/lib/ai/process-meeting";
@@ -83,11 +83,11 @@ export async function createDocumentArticleAction(formData: FormData) {
         pastedText,
       });
       fileName = fileName ?? ingested.fileName ?? null;
-      const generated = await generateArticleFromDocument({
+      const generated = await generateArticleFromIngested({
         title: titleHint,
         category: categoryHint,
         fileName,
-        sourceText: ingested.text,
+        ingested,
       });
       publishedTitle = generated.title || titleHint || fileName || "Firm document";
       publishedCategory = generated.category || publishedCategory;
@@ -188,12 +188,14 @@ export async function refreshArticleAction(formData: FormData) {
         uploaded: file,
       });
       fileName = fileName ?? ingested.fileName ?? null;
-      if (!ingested.text.trim()) redirect(`/articles/${article.slug}?error=ingest`);
-      const generated = await generateArticleFromDocument({
+      if (!ingested.text.trim() && !ingested.pages?.length) {
+        redirect(`/articles/${article.slug}?error=ingest`);
+      }
+      const generated = await generateArticleFromIngested({
         title: article.title,
         category: article.category,
         fileName,
-        sourceText: ingested.text,
+        ingested,
       });
       await updateArticleRecord(article.id, {
         summary: generated.summary,
