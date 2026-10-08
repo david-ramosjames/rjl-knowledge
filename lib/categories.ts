@@ -121,6 +121,9 @@ const SKIP_DROPBOX_FOLDERS = new Set([
   "desktop",
   "downloads",
   "my files",
+  "forms",
+  "form",
+  "ramos james law cases",
 ]);
 
 export function stripFolderNumber(name: string) {
@@ -144,14 +147,13 @@ export function categoryFromDropboxPath(path: string): string {
   if (folders.length === 0) return "";
 
   for (let index = folders.length - 1; index >= 0; index -= 1) {
-    const mapped = matchKnownCategory(folders[index]);
-    if (mapped) return mapped;
+    const raw = folders[index];
+    const cleaned = stripFolderNumber(raw);
+    const lower = cleaned.toLowerCase();
+    if (!cleaned || /^(19|20)\d{2}$/.test(cleaned) || SKIP_DROPBOX_FOLDERS.has(lower) || SKIP_DROPBOX_FOLDERS.has(raw.toLowerCase())) {
+      continue;
+    }
+    return matchKnownCategory(cleaned) ?? matchKnownCategory(raw) ?? normalizeCategory(cleaned);
   }
-
-  const parent = stripFolderNumber(folders[folders.length - 1] ?? "");
-  const lower = parent.toLowerCase();
-  if (!parent || /^(19|20)\d{2}$/.test(parent) || SKIP_DROPBOX_FOLDERS.has(lower)) {
-    return "";
-  }
-  return normalizeCategory(parent);
+  return "";
 }

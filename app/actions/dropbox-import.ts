@@ -99,7 +99,8 @@ export async function importDropboxFileAction(
     });
 
     const title = generated.title || titleHint || downloaded.name;
-    const category = file.category || generated.category || "Other";
+    const folderTopic = file.category || file.folder?.replace(/^\d+[\.\)\s_-]+/, "").trim();
+    const category = folderTopic || generated.category || "Other";
     const driveUrl =
       (await ensureDropboxSharedLink(file.id.startsWith("id:") ? file.id : file.path)) ??
       (file.path !== file.id ? await ensureDropboxSharedLink(file.path) : null);

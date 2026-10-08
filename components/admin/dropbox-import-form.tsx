@@ -38,6 +38,7 @@ export function DropboxImportForm({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ViewFilter>("knowledge");
   const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<string[]>([]);
 
   const counts = useMemo(() => {
     const knowledge = rows.filter((row) => row.relevance === "knowledge").length;
@@ -64,10 +65,71 @@ export function DropboxImportForm({
 
   const importTargets = rows.filter((row) => {
     if (row.state !== "pending" && row.state !== "failed") return false;
+    if (selected.length > 0) return selected.includes(row.path);
     if (filter === "all") return row.relevance === "knowledge";
     if (filter === "skip") return false;
     return row.relevance === filter;
   });
+
+  const excludableRows = (filter === "skip" ? [] : visibleRows).filter(
+    (row) => row.state === "pending" || row.state === "failed",
+  );
+  const pageExcludable = pagedRows.filter((row) => row.state === "pending" || row.state === "failed");
+  const pageSelectable =
+    filter === "skip" ? pagedRows.filter((row) => row.state === "skipped") : pageExcludable;
+  const selectedExcludable = excludableRows.filter((row) => selected.includes(row.path));
+  const allPageSelected =
+    pageSelectable.length > 0 && pageSelectable.every((row) => selected.includes(row.path));
+
+  function toggleSelected(path: string) {
+    setSelected((current) => (current.includes(path) ? current.filter((item) => item !== path) : [...current, path]));
+  }
+
+  function togglePageSelected() {
+    const paths = pageSelectable.map((row) => row.path);
+    setSelected((current) => {
+      if (allPageSelected) return current.filter((path) => !paths.includes(path));
+      return [...new Set([...current, ...paths])];
+    });
+  }
+
+  function excludeRows(targets: Row[]) {
+    if (targets.length === 0) return;
+    const paths = new Set(targets.map((row) => row.path));
+    setRows((currentRows) =>
+      currentRows.map((row) =>
+        paths.has(row.path) && row.state !== "imported" && row.state !== "importing"
+          ? {
+              ...row,
+              relevance: "skip",
+              state: "skipped",
+              skipReason: "Excluded from import.",
+              detail: "Excluded from import.",
+            }
+          : row,
+      ),
+    );
+    setSelected((current) => current.filter((path) => !paths.has(path)));
+  }
+
+  function restoreRows(targets: Row[]) {
+    if (targets.length === 0) return;
+    const paths = new Set(targets.map((row) => row.path));
+    setRows((currentRows) =>
+      currentRows.map((row) =>
+        paths.has(row.path) && row.state === "skipped"
+          ? {
+              ...row,
+              relevance: "review",
+              state: "pending",
+              skipReason: undefined,
+              detail: "Moved back to review.",
+            }
+          : row,
+      ),
+    );
+    setSelected([]);
+  }
 
   async function onScan(event: FormEvent) {
     event.preventDefault();
@@ -77,6 +139,7 @@ export function DropboxImportForm({
     setCurrent(null);
     setQuery("");
     setPage(0);
+    setSelected([]);
     try {
       const result = await scanDropboxFolderAction(source);
       if (!result.ok) {
@@ -150,8 +213,8 @@ export function DropboxImportForm({
           />
           <p className="text-xs leading-5 text-muted-foreground">
             Paste a Dropbox /home URL or a path under the cases root. After the scan, contracts and
-            numbered form packets stay out of the import queue. Only guides, policies, process docs,
-            and similar knowledge files are queued by default.
+            numbered form packets stay out of the import queue. The folder name is the topic.
+            On Review, exclude files you do not want before importing.
           </p>
         </div>
         <Button type="submit" disabled={!configured || scanning || running}>
@@ -176,23 +239,64 @@ export function DropboxImportForm({
                 {current ? ` · Reading ${current}` : ""}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Keep this page open. Import only the knowledge set unless you open Review and choose
-                those files on purpose.
+                Topic comes from the Dropbox folder. On Review, exclude files you do not want, then
+                import the rest. Keep this page open while importing.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                onClick={() => importFiles(importTargets, filter === "review")}
-                disabled={running || importTargets.length === 0 || filter === "skip"}
-              >
-                {running
-                  ? "Importing…"
-                  : filter === "review"
-                    ? `Import ${importTargets.length} reviewed`
-                    : `Import ${importTargets.length} knowledge files`}
-              </Button>
-              {failedCount > 0 ? (
+              {filter === "skip" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    restoreRows(
+                      selected.length > 0
+                        ? pagedRows.filter((row) => selected.includes(row.path) && row.state === "skipped")
+                        : pagedRows.filter((row) => row.state === "skipped"),
+                    )
+                  }
+                  disabled={running || pagedRows.every((row) => row.state !== "skipped")}
+                >
+                  Restore to review
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => excludeRows(selectedExcludable.length > 0 ? selectedExcludable : pageExcludable)}
+                    disabled={running || (selectedExcludable.length === 0 && pageExcludable.length === 0)}
+                  >
+                    {selectedExcludable.length > 0
+                      ? `Exclude ${selectedExcludable.length} selected`
+                      : `Exclude this page`}
+                  </Button>
+                  {filter === "review" && selectedExcludable.length === 0 && excludableRows.length > pageExcludable.length ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => excludeRows(excludableRows)}
+                      disabled={running}
+                    >
+                      Exclude remaining ({excludableRows.length})
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    onClick={() => importFiles(importTargets, filter === "review" || selected.length > 0)}
+                    disabled={running || importTargets.length === 0}
+                  >
+                    {running
+                      ? "Importing…"
+                      : selected.length > 0
+                        ? `Import ${importTargets.length} selected`
+                        : filter === "review"
+                          ? `Import ${importTargets.length} remaining`
+                          : `Import ${importTargets.length} knowledge files`}
+                  </Button>
+                </>
+              )}
+              {failedCount > 0 && filter !== "skip" ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -212,6 +316,7 @@ export function DropboxImportForm({
                 onClick={() => {
                   setFilter("knowledge");
                   setPage(0);
+                  setSelected([]);
                 }}
               >
                 Knowledge ({counts.knowledge})
@@ -221,6 +326,7 @@ export function DropboxImportForm({
                 onClick={() => {
                   setFilter("review");
                   setPage(0);
+                  setSelected([]);
                 }}
               >
                 Review ({counts.review})
@@ -230,6 +336,7 @@ export function DropboxImportForm({
                 onClick={() => {
                   setFilter("skip");
                   setPage(0);
+                  setSelected([]);
                 }}
               >
                 Excluded ({counts.skip})
@@ -239,6 +346,7 @@ export function DropboxImportForm({
                 onClick={() => {
                   setFilter("all");
                   setPage(0);
+                  setSelected([]);
                 }}
               >
                 All ({rows.length})
@@ -259,29 +367,53 @@ export function DropboxImportForm({
             <div className="max-h-[min(28rem,60vh)] overflow-auto">
               <table className="w-full table-fixed text-left text-sm">
                 <colgroup>
-                  <col className="w-[46%]" />
-                  <col className="w-[22%]" />
+                  <col className="w-10" />
+                  <col className="w-[38%]" />
                   <col className="w-[20%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[12%]" />
                   <col className="w-[12%]" />
                 </colgroup>
                 <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 text-muted-foreground backdrop-blur">
                   <tr>
+                    <th className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        aria-label="Select this page"
+                        checked={allPageSelected}
+                        onChange={togglePageSelected}
+                        disabled={pageSelectable.length === 0}
+                        className="size-4 accent-primary"
+                      />
+                    </th>
                     <th className="px-3 py-2 font-medium">File</th>
                     <th className="px-3 py-2 font-medium">Folder</th>
-                    <th className="px-3 py-2 font-medium">Category</th>
+                    <th className="px-3 py-2 font-medium">Topic</th>
                     <th className="px-3 py-2 font-medium">Status</th>
+                    <th className="px-3 py-2 font-medium">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {pagedRows.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-8 text-muted-foreground">
+                      <td colSpan={6} className="px-3 py-8 text-muted-foreground">
                         Nothing in this view. Try Review if the knowledge list is empty.
                       </td>
                     </tr>
                   ) : (
                     pagedRows.map((row) => (
                       <tr key={row.path} className="border-b border-border last:border-0">
+                        <td className="px-2 py-2">
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${row.name}`}
+                            checked={selected.includes(row.path)}
+                            onChange={() => toggleSelected(row.path)}
+                            className="size-4 accent-primary"
+                          />
+                        </td>
                         <td className="max-w-0 px-3 py-2">
                           <div className="truncate font-medium" title={row.name}>
                             {row.name}
@@ -299,10 +431,31 @@ export function DropboxImportForm({
                         <td className="max-w-0 truncate px-3 py-2 text-muted-foreground" title={row.folder}>
                           {row.folder || "—"}
                         </td>
-                        <td className="max-w-0 truncate px-3 py-2 text-muted-foreground" title={row.category}>
-                          {row.category || "AI will choose"}
+                        <td className="max-w-0 truncate px-3 py-2 text-muted-foreground" title={row.category || row.folder}>
+                          {row.category || row.folder || "—"}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">{statusLabel(row)}</td>
+                        <td className="px-3 py-2">
+                          {row.state === "pending" || row.state === "failed" ? (
+                            <button
+                              type="button"
+                              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                              onClick={() => excludeRows([row])}
+                              disabled={running}
+                            >
+                              Exclude
+                            </button>
+                          ) : row.state === "skipped" ? (
+                            <button
+                              type="button"
+                              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                              onClick={() => restoreRows([row])}
+                              disabled={running}
+                            >
+                              Restore
+                            </button>
+                          ) : null}
+                        </td>
                       </tr>
                     ))
                   )}
