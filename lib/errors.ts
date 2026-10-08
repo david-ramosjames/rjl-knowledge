@@ -65,7 +65,7 @@ export function errorMessageFromCode(code: string, fallback?: string): string {
     case ErrorCodes.INGEST_FAILED:
       return "The hub could not read that document. Share the Dropbox or Drive file so anyone with the link can view it, or upload the file so the AI can ingest it.";
     case ErrorCodes.DROPBOX_NOT_CONFIGURED:
-      return "Add DROPBOX_ACCESS_TOKEN on Railway, then scan the folder again.";
+      return "Add DROPBOX_APP_KEY, DROPBOX_APP_SECRET, and DROPBOX_REFRESH_TOKEN on Railway, then scan the folder again.";
     default:
       return fallback || "Something went wrong. Try again.";
   }

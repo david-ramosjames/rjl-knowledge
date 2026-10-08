@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DropboxImportForm } from "@/components/admin/dropbox-import-form";
-import { isDropboxConfigured } from "@/lib/dropbox/client";
+import { defaultDropboxFolderPath, isDropboxConfigured } from "@/lib/dropbox/client";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 180;
@@ -21,7 +21,10 @@ export default async function ImportDocumentsPage() {
         </p>
       </div>
       <div className="mt-8">
-        <DropboxImportForm configured={isDropboxConfigured()} />
+        <DropboxImportForm
+          configured={isDropboxConfigured()}
+          defaultFolder={defaultDropboxFolderPath()}
+        />
       </div>
     </main>
   );

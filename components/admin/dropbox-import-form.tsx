@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { importDropboxFileAction, scanDropboxFolderAction, type DropboxImportFile } from "@/app/actions/dropbox-import";
 import { ErrorBanner } from "@/components/error-banner";
@@ -16,8 +16,14 @@ type Row = DropboxImportFile & {
   slug?: string;
 };
 
-export function DropboxImportForm({ configured }: { configured: boolean }) {
-  const [source, setSource] = useState("");
+export function DropboxImportForm({
+  configured,
+  defaultFolder,
+}: {
+  configured: boolean;
+  defaultFolder?: string;
+}) {
+  const [source, setSource] = useState(defaultFolder ?? "");
   const [rows, setRows] = useState<Row[]>([]);
   const [scanned, setScanned] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +31,6 @@ export function DropboxImportForm({ configured }: { configured: boolean }) {
   const [running, setRunning] = useState(false);
   const [current, setCurrent] = useState<string | null>(null);
 
-  const pending = useMemo(() => rows.filter((row) => row.state === "pending" || row.state === "failed"), [rows]);
   const importedCount = rows.filter((row) => row.state === "imported").length;
   const skippedCount = rows.filter((row) => row.state === "skipped").length;
   const failedCount = rows.filter((row) => row.state === "failed").length;
@@ -87,7 +92,7 @@ export function DropboxImportForm({ configured }: { configured: boolean }) {
   return (
     <div className="space-y-8">
       {!configured ? (
-        <ErrorBanner message="Add DROPBOX_ACCESS_TOKEN on the Railway app service, then reload this page. Use a Dropbox app token with files.metadata.read, files.content.read, sharing.read, and sharing.write." />
+        <ErrorBanner message="Add DROPBOX_APP_KEY, DROPBOX_APP_SECRET, and DROPBOX_REFRESH_TOKEN on the Railway app service (the same Dropbox keys the firm already uses). DROPBOX_NAMESPACE_ID and DROPBOX_CASES_ROOT are recommended so the scan starts in the right team folder." />
       ) : null}
       {error ? <ErrorBanner message={error} /> : null}
 
@@ -98,11 +103,11 @@ export function DropboxImportForm({ configured }: { configured: boolean }) {
             id="dropbox-source"
             value={source}
             onChange={(event) => setSource(event.target.value)}
-            placeholder="/Firm Knowledge or a shared folder link"
+            placeholder={defaultFolder || "/Firm Knowledge or a shared folder link"}
             disabled={!configured || scanning || running}
           />
           <p className="text-xs leading-5 text-muted-foreground">
-            Leave this blank to scan the whole connected Dropbox. Files in named folders get that
+            Blank uses DROPBOX_CASES_ROOT when that is set. Files in named folders get that
             category; loose files let the AI choose. PDF, Word, and text files only.
           </p>
         </div>

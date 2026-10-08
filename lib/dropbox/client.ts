@@ -3,20 +3,101 @@ import { normalizeDropboxUrl } from "@/lib/file-links";
 
 const API = "https://api.dropboxapi.com/2";
 const CONTENT = "https://content.dropboxapi.com/2";
+const TOKEN_URL = "https://api.dropbox.com/oauth2/token";
+
+type CachedAccessToken = { token: string; expiresAt: number };
+
+let cachedAccessToken: CachedAccessToken | null = null;
+let pendingAccessToken: Promise<string> | null = null;
 
 export function isDropboxConfigured() {
-  return Boolean(process.env.DROPBOX_ACCESS_TOKEN?.trim());
+  if (process.env.DROPBOX_ACCESS_TOKEN?.trim()) return true;
+  return Boolean(
+    process.env.DROPBOX_APP_KEY?.trim() &&
+      process.env.DROPBOX_APP_SECRET?.trim() &&
+      process.env.DROPBOX_REFRESH_TOKEN?.trim(),
+  );
 }
 
-function dropboxToken() {
-  const token = process.env.DROPBOX_ACCESS_TOKEN?.trim();
-  if (!token) {
+export function defaultDropboxFolderPath() {
+  return normalizeFolderPath(process.env.DROPBOX_CASES_ROOT) ?? "";
+}
+
+async function getDropboxAccessToken() {
+  const staticToken = process.env.DROPBOX_ACCESS_TOKEN?.trim();
+  if (staticToken) return staticToken;
+
+  if (cachedAccessToken && Date.now() < cachedAccessToken.expiresAt - 60_000) {
+    return cachedAccessToken.token;
+  }
+  if (pendingAccessToken) return pendingAccessToken;
+
+  pendingAccessToken = refreshDropboxAccessToken().finally(() => {
+    pendingAccessToken = null;
+  });
+  return pendingAccessToken;
+}
+
+async function refreshDropboxAccessToken() {
+  const appKey = process.env.DROPBOX_APP_KEY?.trim();
+  const appSecret = process.env.DROPBOX_APP_SECRET?.trim();
+  const refreshToken = process.env.DROPBOX_REFRESH_TOKEN?.trim();
+  if (!appKey || !appSecret || !refreshToken) {
     throw new AppError(
       ErrorCodes.DROPBOX_NOT_CONFIGURED,
-      "Add DROPBOX_ACCESS_TOKEN on the Railway app service, then try again.",
+      "Add DROPBOX_APP_KEY, DROPBOX_APP_SECRET, and DROPBOX_REFRESH_TOKEN on the Railway app service, then try again.",
     );
   }
-  return token;
+
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+    client_id: appKey,
+    client_secret: appSecret,
+  });
+
+  const response = await fetch(TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+
+  if (!response.ok) {
+    throw new AppError(
+      ErrorCodes.DROPBOX_NOT_CONFIGURED,
+      "Dropbox refused the refresh token. Check DROPBOX_APP_KEY, DROPBOX_APP_SECRET, and DROPBOX_REFRESH_TOKEN on Railway.",
+    );
+  }
+
+  const parsed = (await response.json()) as { access_token?: string; expires_in?: number | string };
+  if (!parsed.access_token) {
+    throw new AppError(
+      ErrorCodes.DROPBOX_NOT_CONFIGURED,
+      "Dropbox did not return an access token. Check the Dropbox app credentials on Railway.",
+    );
+  }
+
+  const expiresIn = Number(parsed.expires_in);
+  cachedAccessToken = {
+    token: parsed.access_token,
+    expiresAt: Date.now() + (Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn * 1000 : 3_600_000),
+  };
+  return parsed.access_token;
+}
+
+async function dropboxAuthHeaders(extra: Record<string, string> = {}) {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${await getDropboxAccessToken()}`,
+    ...extra,
+  };
+  const namespaceId = process.env.DROPBOX_NAMESPACE_ID?.trim();
+  if (namespaceId) {
+    headers["Dropbox-API-Path-Root"] = JSON.stringify({
+      ".tag": "namespace_id",
+      namespace_id: namespaceId,
+    });
+  }
+  return headers;
 }
 
 export type DropboxListedFile = {
@@ -36,7 +117,7 @@ type ListEntry = {
 
 export function parseDropboxScanSource(raw: string): { folderPath?: string; folderUrl?: string } {
   const trimmed = raw.trim();
-  if (!trimmed) return { folderPath: "" };
+  if (!trimmed) return { folderPath: defaultDropboxFolderPath() };
 
   const share = normalizeDropboxUrl(trimmed);
   if (share) return { folderUrl: share };
@@ -59,7 +140,7 @@ export function parseDropboxScanSource(raw: string): { folderPath?: string; fold
 
 export async function listDropboxFiles(input: { folderPath?: string; folderUrl?: string }) {
   const sharedUrl = input.folderUrl ? normalizeDropboxUrl(input.folderUrl) : null;
-  const folderPath = normalizeFolderPath(input.folderPath) ?? "";
+  const folderPath = normalizeFolderPath(input.folderPath) ?? defaultDropboxFolderPath();
 
   const files: DropboxListedFile[] = [];
   let cursor: string | null = null;
@@ -123,10 +204,9 @@ export async function downloadDropboxFile(input: {
 
   const response = await fetch(`${CONTENT}/files/download`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${dropboxToken()}`,
+    headers: await dropboxAuthHeaders({
       "Dropbox-API-Arg": JSON.stringify(arg),
-    },
+    }),
   });
 
   if (!response.ok) {
@@ -198,10 +278,9 @@ function folderName(path: string) {
 async function dropboxJson<T>(pathname: string, body: unknown): Promise<T> {
   const response = await fetch(`${API}${pathname}`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${dropboxToken()}`,
+    headers: await dropboxAuthHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify(body),
   });
   if (!response.ok) {
