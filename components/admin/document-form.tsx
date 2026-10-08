@@ -33,8 +33,8 @@ export function DocumentForm({ error }: { error?: string | null }) {
         />
         <p className="text-xs leading-5 text-muted-foreground">
           Use this when there is no transcript — for example PI Mastermind slides. Select the
-          screenshots in order (up to 16). The AI reads the pictures and writes the article. The
-          hub also keeps the slides on the page.
+          screenshots in order (up to 16, about 50 MB total). The AI reads the pictures and writes
+          the article. The hub also keeps the slides on the page.
         </p>
       </div>
 

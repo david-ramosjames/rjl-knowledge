@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "50mb",
     },
+    proxyClientMaxBodySize: "50mb",
+    middlewareClientMaxBodySize: "50mb",
   },
   turbopack: {
     root: path.join(__dirname),
