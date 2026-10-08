@@ -11,7 +11,13 @@ import {
   listDropboxFiles,
   parseDropboxScanSource,
 } from "@/lib/dropbox/client";
-import { isImportableDocumentName, toImportFile, type DropboxImportFile } from "@/lib/dropbox/import";
+import { classifyDropboxFile } from "@/lib/dropbox/relevance";
+import {
+  dedupeImportFiles,
+  isImportableDocumentName,
+  toImportFile,
+  type DropboxImportFile,
+} from "@/lib/dropbox/import";
 import { ingestFileBuffer } from "@/lib/ingest/document";
 import { AppError } from "@/lib/errors";
 
@@ -32,13 +38,14 @@ export async function scanDropboxFolderAction(source: string): Promise<ScanDropb
     const parsed = parseDropboxScanSource(source);
     const listed = await listDropboxFiles(parsed);
     const keys = await listArticleImportKeys();
-    const files = listed.files
-      .filter((file) => isImportableDocumentName(file.name))
-      .map((file) => toImportFile(file, listed.sharedUrl, keys))
-      .sort((a, b) => {
-        const folder = a.folder.localeCompare(b.folder);
-        return folder !== 0 ? folder : a.name.localeCompare(b.name);
-      });
+    const files = dedupeImportFiles(
+      listed.files
+        .filter((file) => isImportableDocumentName(file.name))
+        .map((file) => toImportFile(file, listed.sharedUrl, keys)),
+    ).sort((a, b) => {
+      const folder = a.folder.localeCompare(b.folder);
+      return folder !== 0 ? folder : a.name.localeCompare(b.name);
+    });
     return { ok: true, files, scanned: listed.files.length };
   } catch (error) {
     unstable_rethrow(error);
@@ -52,7 +59,10 @@ export async function scanDropboxFolderAction(source: string): Promise<ScanDropb
   }
 }
 
-export async function importDropboxFileAction(file: DropboxImportFile): Promise<ImportDropboxResult> {
+export async function importDropboxFileAction(
+  file: DropboxImportFile,
+  options?: { force?: boolean },
+): Promise<ImportDropboxResult> {
   await requireAdmin();
   try {
     if (!file?.name || !file.path) {
@@ -60,6 +70,13 @@ export async function importDropboxFileAction(file: DropboxImportFile): Promise<
     }
     if (!isImportableDocumentName(file.name)) {
       return { status: "skipped", reason: "Not a PDF, Word, or text file." };
+    }
+    const classified = classifyDropboxFile(file);
+    if (classified.relevance !== "knowledge" && !options?.force) {
+      return {
+        status: "skipped",
+        reason: classified.skipReason || "Not a knowledge document.",
+      };
     }
 
     const existing = await findArticleByImportKey(file.name);

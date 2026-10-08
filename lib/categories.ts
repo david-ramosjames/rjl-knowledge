@@ -123,12 +123,20 @@ const SKIP_DROPBOX_FOLDERS = new Set([
   "my files",
 ]);
 
+export function stripFolderNumber(name: string) {
+  const stripped = name.replace(/^\d+[\.\)\s_-]+/, "").trim();
+  return stripped || name;
+}
+
 export function matchKnownCategory(name: string): string | null {
   const raw = name.trim();
   if (!raw) return null;
-  const exact = DEFAULT_CATEGORIES.find((category) => category.toLowerCase() === raw.toLowerCase());
+  const cleaned = stripFolderNumber(raw);
+  const exact = DEFAULT_CATEGORIES.find(
+    (category) => category.toLowerCase() === raw.toLowerCase() || category.toLowerCase() === cleaned.toLowerCase(),
+  );
   if (exact) return exact;
-  return CATEGORY_ALIASES[raw.toLowerCase()] ?? null;
+  return CATEGORY_ALIASES[raw.toLowerCase()] ?? CATEGORY_ALIASES[cleaned.toLowerCase()] ?? null;
 }
 
 export function categoryFromDropboxPath(path: string): string {
@@ -140,7 +148,7 @@ export function categoryFromDropboxPath(path: string): string {
     if (mapped) return mapped;
   }
 
-  const parent = folders[folders.length - 1] ?? "";
+  const parent = stripFolderNumber(folders[folders.length - 1] ?? "");
   const lower = parent.toLowerCase();
   if (!parent || /^(19|20)\d{2}$/.test(parent) || SKIP_DROPBOX_FOLDERS.has(lower)) {
     return "";

@@ -169,6 +169,7 @@ export async function listDropboxFiles(input: { folderPath?: string; folderUrl?:
   const folderPath = normalizeFolderPath(input.folderPath) ?? defaultDropboxFolderPath();
 
   const files: DropboxListedFile[] = [];
+  const seen = new Set<string>();
   let cursor: string | null = null;
   let hasMore = true;
 
@@ -202,6 +203,9 @@ export async function listDropboxFiles(input: { folderPath?: string; folderUrl?:
     for (const entry of data.entries ?? []) {
       if (entry[".tag"] !== "file" || !entry.name) continue;
       const path = entry.path_display || entry.path_lower || entry.name;
+      const key = (entry.id || path).toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
       files.push({
         id: entry.id || path,
         name: entry.name,

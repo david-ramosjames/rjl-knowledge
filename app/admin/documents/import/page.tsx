@@ -15,9 +15,8 @@ export default async function ImportDocumentsPage() {
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Import from Dropbox</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Scan a Dropbox folder, skip files the hub already has, and ingest the rest one by one.
-          Folder names become categories when they match firm types; loose files are categorized
-          by the AI.
+          Scan a Dropbox folder. The hub keeps guides, policies, and process docs, and leaves out
+          contracts and other case forms. Import the knowledge set one file at a time.
         </p>
       </div>
       <div className="mt-8">
