@@ -146,10 +146,17 @@ export async function extractFileBytes(bytes: Buffer, contentType: string, fileN
   }
 
   if (lowerName.endsWith(".pdf") || type.includes("pdf")) {
-    const { extractText, getDocumentProxy } = await import("unpdf");
-    const pdf = await getDocumentProxy(new Uint8Array(bytes));
-    const extracted = await extractText(pdf, { mergePages: true });
-    return extracted.text || "";
+    try {
+      const { extractText, getDocumentProxy } = await import("unpdf");
+      const pdf = await getDocumentProxy(new Uint8Array(bytes));
+      const extracted = await extractText(pdf, { mergePages: true });
+      return extracted.text || "";
+    } catch {
+      throw new AppError(
+        ErrorCodes.INGEST_FAILED,
+        "This PDF could not be read. It may be scanned images or use fonts the hub cannot parse.",
+      );
+    }
   }
 
   const asText = bytes.toString("utf8");

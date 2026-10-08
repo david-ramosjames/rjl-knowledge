@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { TopicStatus } from "@/lib/generated/prisma/client";
 import { AppError, ErrorCodes } from "@/lib/errors";
+import { fileKeyVariants } from "@/lib/dropbox/import";
 import { asLitEvents, asStringArray, buildSearchText, normalizeTitle, slugify, uniqueStrings } from "@/lib/utils";
 
 async function uniqueArticleSlug(title: string) {
@@ -360,17 +361,24 @@ export async function listArticleImportKeys() {
 export async function findArticleByImportKey(fileName: string) {
   const name = fileName.trim();
   if (!name) return null;
-  const stemTitle = normalizeTitle(name.replace(/\.[^.]+$/, ""));
   try {
-    return await prisma.article.findFirst({
-      where: {
-        OR: [
-          { fileName: { equals: name, mode: "insensitive" } },
-          ...(stemTitle ? [{ normalizedTitle: stemTitle }] : []),
-        ],
-      },
-      select: { slug: true, title: true },
+    const exact = await prisma.article.findFirst({
+      where: { fileName: { equals: name, mode: "insensitive" } },
+      select: { slug: true, title: true, fileName: true, normalizedTitle: true },
     });
+    if (exact) return exact;
+
+    const incoming = new Set(fileKeyVariants(name));
+    const rows = await prisma.article.findMany({
+      select: { slug: true, title: true, fileName: true, normalizedTitle: true },
+    });
+    return (
+      rows.find((row) => {
+        if (row.normalizedTitle && incoming.has(row.normalizedTitle)) return true;
+        if (!row.fileName) return false;
+        return fileKeyVariants(row.fileName).some((variant) => incoming.has(variant));
+      }) ?? null
+    );
   } catch {
     throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not check for an existing article.", 500);
   }

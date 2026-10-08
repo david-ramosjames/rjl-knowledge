@@ -28,14 +28,34 @@ export function fileStem(name: string) {
   return name.replace(/\.[^.]+$/, "");
 }
 
+export function fileKeyVariants(fileName: string) {
+  const lower = fileName.trim().toLowerCase();
+  const stem = fileStem(lower);
+  const stripped = stem.replace(/^\d+[\.\)\s_-]+/, "").trim();
+  return [
+    lower,
+    stem,
+    stripped,
+    normalizeTitle(stem),
+    normalizeTitle(stripped),
+  ].filter(Boolean);
+}
+
 export function isAlreadyImported(
   fileName: string,
   keys: { fileNames: string[]; titles: string[] },
 ) {
-  const lower = fileName.trim().toLowerCase();
-  if (lower && keys.fileNames.includes(lower)) return true;
-  const stem = normalizeTitle(fileStem(fileName));
-  return Boolean(stem && keys.titles.includes(stem));
+  const incoming = new Set(fileKeyVariants(fileName));
+  if (incoming.size === 0) return false;
+  for (const existing of keys.fileNames) {
+    for (const variant of fileKeyVariants(existing)) {
+      if (incoming.has(variant)) return true;
+    }
+  }
+  for (const title of keys.titles) {
+    if (incoming.has(title)) return true;
+  }
+  return false;
 }
 
 export function toImportFile(
@@ -43,12 +63,23 @@ export function toImportFile(
   sharedUrl: string | null,
   keys: { fileNames: string[]; titles: string[] },
 ): DropboxImportFile {
+  const alreadyImported = isAlreadyImported(file.name, keys);
+  if (alreadyImported) {
+    return {
+      ...file,
+      category: categoryFromDropboxPath(file.path),
+      sharedUrl,
+      alreadyImported: true,
+      relevance: "skip",
+      skipReason: "Already in the hub.",
+    };
+  }
   const classified = classifyDropboxFile(file);
   return {
     ...file,
     category: categoryFromDropboxPath(file.path),
     sharedUrl,
-    alreadyImported: isAlreadyImported(file.name, keys),
+    alreadyImported: false,
     relevance: classified.relevance,
     skipReason: classified.skipReason,
   };

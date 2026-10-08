@@ -79,7 +79,9 @@ export async function importDropboxFileAction(
       };
     }
 
-    const existing = await findArticleByImportKey(file.name);
+    const existing =
+      (await findArticleByImportKey(file.name)) ??
+      (file.path ? await findArticleByImportKey(file.path.split("/").filter(Boolean).at(-1) ?? "") : null);
     if (existing) {
       return { status: "skipped", reason: `Already in the hub as “${existing.title}”.` };
     }
@@ -89,6 +91,10 @@ export async function importDropboxFileAction(
       path: file.path,
       sharedUrl: file.sharedUrl,
     });
+    const existingByDownload = await findArticleByImportKey(downloaded.name);
+    if (existingByDownload) {
+      return { status: "skipped", reason: `Already in the hub as “${existingByDownload.title}”.` };
+    }
     const ingested = await ingestFileBuffer(downloaded.bytes, downloaded.name, downloaded.contentType);
     const titleHint = fileStemTitle(downloaded.name);
     const generated = await generateArticleFromDocument({
@@ -124,15 +130,19 @@ export async function importDropboxFileAction(
     return { status: "imported", slug: article.slug, title: article.title };
   } catch (error) {
     unstable_rethrow(error);
-    return {
-      status: "failed",
-      message:
-        error instanceof AppError
+    const message =
+      error instanceof AppError
+        ? error.message
+        : error instanceof Error
           ? error.message
-          : error instanceof Error
-            ? error.message
-            : "That file could not be imported.",
-    };
+          : "That file could not be imported.";
+    const unreadable =
+      error instanceof AppError &&
+      /could not be read|could not read any text|larger than 12 MB|scanned images/i.test(error.message);
+    if (unreadable) {
+      return { status: "skipped", reason: message };
+    }
+    return { status: "failed", message };
   }
 }
 

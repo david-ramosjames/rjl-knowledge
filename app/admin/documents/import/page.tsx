@@ -15,8 +15,8 @@ export default async function ImportDocumentsPage() {
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">Admin</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Import from Dropbox</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Scan a Dropbox folder. The file’s folder becomes its topic. Contracts stay out of the
-          queue; on Review you can exclude files you do not want, then import the rest.
+          Scan a Dropbox folder. Files already in the hub are skipped, so a re-scan only queues
+          new or previously failed documents. The file’s folder becomes its topic.
         </p>
       </div>
       <div className="mt-8">

@@ -41,10 +41,11 @@ export function DropboxImportForm({
   const [selected, setSelected] = useState<string[]>([]);
 
   const counts = useMemo(() => {
-    const knowledge = rows.filter((row) => row.relevance === "knowledge").length;
-    const review = rows.filter((row) => row.relevance === "review").length;
+    const already = rows.filter((row) => row.alreadyImported).length;
+    const knowledge = rows.filter((row) => row.relevance === "knowledge" && !row.alreadyImported).length;
+    const review = rows.filter((row) => row.relevance === "review" && !row.alreadyImported).length;
     const skip = rows.filter((row) => row.relevance === "skip").length;
-    return { knowledge, review, skip };
+    return { already, knowledge, review, skip };
   }, [rows]);
 
   const importedCount = rows.filter((row) => row.state === "imported").length;
@@ -64,6 +65,7 @@ export function DropboxImportForm({
   const pagedRows = visibleRows.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
 
   const importTargets = rows.filter((row) => {
+    if (row.alreadyImported) return false;
     if (row.state !== "pending" && row.state !== "failed") return false;
     if (selected.length > 0) return selected.includes(row.path);
     if (filter === "all") return row.relevance === "knowledge";
@@ -117,7 +119,7 @@ export function DropboxImportForm({
     const paths = new Set(targets.map((row) => row.path));
     setRows((currentRows) =>
       currentRows.map((row) =>
-        paths.has(row.path) && row.state === "skipped"
+        paths.has(row.path) && row.state === "skipped" && !row.alreadyImported
           ? {
               ...row,
               relevance: "review",
@@ -213,8 +215,9 @@ export function DropboxImportForm({
           />
           <p className="text-xs leading-5 text-muted-foreground">
             Paste a Dropbox /home URL or a path under the cases root. After the scan, contracts and
-            numbered form packets stay out of the import queue. The folder name is the topic.
-            On Review, exclude files you do not want before importing.
+            numbered form packets stay out of the import queue. Files already in the hub are
+            skipped. The folder name is the topic. On Review, exclude files you do not want
+            before importing.
           </p>
         </div>
         <Button type="submit" disabled={!configured || scanning || running}>
@@ -227,10 +230,10 @@ export function DropboxImportForm({
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-medium">
-                {counts.knowledge} knowledge files
+                {counts.knowledge} new knowledge files
                 <span className="font-normal text-muted-foreground">
                   {" "}
-                  · {counts.review} to review · {counts.skip} excluded
+                  · {counts.already} already in the hub · {counts.review} to review · {counts.skip} excluded
                   {scanned ? ` · ${scanned} items in Dropbox` : ""}
                 </span>
               </p>
@@ -251,11 +254,15 @@ export function DropboxImportForm({
                   onClick={() =>
                     restoreRows(
                       selected.length > 0
-                        ? pagedRows.filter((row) => selected.includes(row.path) && row.state === "skipped")
-                        : pagedRows.filter((row) => row.state === "skipped"),
+                        ? pagedRows.filter(
+                            (row) => selected.includes(row.path) && row.state === "skipped" && !row.alreadyImported,
+                          )
+                        : pagedRows.filter((row) => row.state === "skipped" && !row.alreadyImported),
                     )
                   }
-                  disabled={running || pagedRows.every((row) => row.state !== "skipped")}
+                  disabled={
+                    running || pagedRows.every((row) => row.state !== "skipped" || row.alreadyImported)
+                  }
                 >
                   Restore to review
                 </Button>
@@ -445,7 +452,7 @@ export function DropboxImportForm({
                             >
                               Exclude
                             </button>
-                          ) : row.state === "skipped" ? (
+                          ) : row.state === "skipped" && !row.alreadyImported ? (
                             <button
                               type="button"
                               className="text-xs font-medium text-muted-foreground hover:text-foreground"
