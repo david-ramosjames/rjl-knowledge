@@ -39,6 +39,7 @@ export const ErrorCodes = {
   VALIDATION: "VALIDATION",
   INVALID_DRIVE_URL: "INVALID_DRIVE_URL",
   INGEST_FAILED: "INGEST_FAILED",
+  DROPBOX_NOT_CONFIGURED: "DROPBOX_NOT_CONFIGURED",
 } as const;
 
 export function errorMessageFromCode(code: string, fallback?: string): string {
@@ -63,6 +64,8 @@ export function errorMessageFromCode(code: string, fallback?: string): string {
       return "Paste a Dropbox, Google Drive, or Google Docs share link, or upload slide screenshots.";
     case ErrorCodes.INGEST_FAILED:
       return "The hub could not read that document. Share the Dropbox or Drive file so anyone with the link can view it, or upload the file so the AI can ingest it.";
+    case ErrorCodes.DROPBOX_NOT_CONFIGURED:
+      return "Add DROPBOX_ACCESS_TOKEN on Railway, then scan the folder again.";
     default:
       return fallback || "Something went wrong. Try again.";
   }

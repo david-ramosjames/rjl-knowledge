@@ -341,6 +341,41 @@ export async function listPublishedArticles(options?: {
   });
 }
 
+export async function listArticleImportKeys() {
+  try {
+    const rows = await prisma.article.findMany({
+      select: { fileName: true, normalizedTitle: true },
+    });
+    return {
+      fileNames: uniqueStrings(
+        rows.map((row) => (row.fileName ?? "").trim().toLowerCase()).filter(Boolean),
+      ),
+      titles: uniqueStrings(rows.map((row) => row.normalizedTitle).filter(Boolean)),
+    };
+  } catch {
+    throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not load existing articles.", 500);
+  }
+}
+
+export async function findArticleByImportKey(fileName: string) {
+  const name = fileName.trim();
+  if (!name) return null;
+  const stemTitle = normalizeTitle(name.replace(/\.[^.]+$/, ""));
+  try {
+    return await prisma.article.findFirst({
+      where: {
+        OR: [
+          { fileName: { equals: name, mode: "insensitive" } },
+          ...(stemTitle ? [{ normalizedTitle: stemTitle }] : []),
+        ],
+      },
+      select: { slug: true, title: true },
+    });
+  } catch {
+    throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not check for an existing article.", 500);
+  }
+}
+
 export async function listArticlesForAdmin() {
   return listPublishedArticles();
 }

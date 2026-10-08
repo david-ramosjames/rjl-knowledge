@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { FolderDown, Plus } from "lucide-react";
 import { DeleteArticleButton } from "@/components/admin/delete-article-button";
 import { RefreshArticleButton } from "@/components/admin/refresh-article-button";
 import { RenameArticleForm } from "@/components/admin/rename-article-form";
@@ -35,12 +35,20 @@ export default async function AdminDocumentsPage({
             Refresh article to rewrite the overview and key points. Do not delete just to re-add.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/documents/new">
-            <Plus className="size-4" />
-            Add document
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild variant="outline">
+            <Link href="/admin/documents/import">
+              <FolderDown className="size-4" />
+              Import Dropbox
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/documents/new">
+              <Plus className="size-4" />
+              Add document
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {query.error === "delete" ? (

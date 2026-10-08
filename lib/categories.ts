@@ -100,3 +100,50 @@ export function categoryFromSlug(slug: string): string | null {
   const match = DEFAULT_CATEGORIES.find((category) => categoryToSlug(category) === slug);
   return match ?? null;
 }
+
+const SKIP_DROPBOX_FOLDERS = new Set([
+  "documents",
+  "files",
+  "docs",
+  "dropbox",
+  "shared",
+  "knowledge",
+  "knowledge hub",
+  "rjl",
+  "ramos james",
+  "ramos james law",
+  "firm knowledge",
+  "unsorted",
+  "misc",
+  "miscellaneous",
+  "home",
+  "work",
+  "desktop",
+  "downloads",
+  "my files",
+]);
+
+export function matchKnownCategory(name: string): string | null {
+  const raw = name.trim();
+  if (!raw) return null;
+  const exact = DEFAULT_CATEGORIES.find((category) => category.toLowerCase() === raw.toLowerCase());
+  if (exact) return exact;
+  return CATEGORY_ALIASES[raw.toLowerCase()] ?? null;
+}
+
+export function categoryFromDropboxPath(path: string): string {
+  const folders = path.split("/").filter(Boolean).slice(0, -1);
+  if (folders.length === 0) return "";
+
+  for (let index = folders.length - 1; index >= 0; index -= 1) {
+    const mapped = matchKnownCategory(folders[index]);
+    if (mapped) return mapped;
+  }
+
+  const parent = folders[folders.length - 1] ?? "";
+  const lower = parent.toLowerCase();
+  if (!parent || /^(19|20)\d{2}$/.test(parent) || SKIP_DROPBOX_FOLDERS.has(lower)) {
+    return "";
+  }
+  return normalizeCategory(parent);
+}

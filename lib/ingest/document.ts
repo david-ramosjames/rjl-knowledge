@@ -71,7 +71,7 @@ async function fetchRemoteFile(url: string, fallbackName: string): Promise<Inges
       fileNameFromDisposition(response.headers.get("content-disposition")) ??
       fileNameFromShareUrl(url) ??
       fallbackName;
-    const text = await extractBytes(bytes, contentType, fileName);
+    const text = await extractFileBytes(bytes, contentType, fileName);
     if (!text.trim()) return null;
     return { text: clipText(text), fileName };
   } catch {
@@ -88,7 +88,7 @@ async function extractUploadedFile(file: File): Promise<IngestedDocument> {
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
-  const text = await extractBytes(bytes, file.type, file.name);
+  const text = await extractFileBytes(bytes, file.type, file.name);
   if (!text.trim()) {
     throw new AppError(
       ErrorCodes.INGEST_FAILED,
@@ -99,7 +99,30 @@ async function extractUploadedFile(file: File): Promise<IngestedDocument> {
   return { text: clipText(text), fileName: file.name };
 }
 
-async function extractBytes(bytes: Buffer, contentType: string, fileName: string) {
+export async function ingestFileBuffer(
+  bytes: Buffer,
+  fileName: string,
+  contentType = "",
+): Promise<IngestedDocument> {
+  if (bytes.length > MAX_UPLOAD_BYTES) {
+    throw new AppError(
+      ErrorCodes.INGEST_FAILED,
+      "That file is larger than 12 MB. Split it or import it individually.",
+    );
+  }
+
+  const text = await extractFileBytes(bytes, contentType, fileName);
+  if (!text.trim()) {
+    throw new AppError(
+      ErrorCodes.INGEST_FAILED,
+      "The AI could not read any text from that file. Try a PDF, Word document, or plain text file.",
+    );
+  }
+
+  return { text: clipText(text), fileName };
+}
+
+export async function extractFileBytes(bytes: Buffer, contentType: string, fileName: string) {
   const lowerName = fileName.toLowerCase();
   const type = contentType.toLowerCase();
 

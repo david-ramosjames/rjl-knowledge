@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, FileUp, Plus } from "lucide-react";
+import { BookOpen, FileUp, FolderDown, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getAdminStats } from "@/lib/db/meetings";
@@ -48,6 +48,12 @@ export default async function AdminPage() {
             <Link href="/admin/documents/new">
               <FileUp className="size-4" />
               Add document
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/admin/documents/import">
+              <FolderDown className="size-4" />
+              Import Dropbox
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline">
