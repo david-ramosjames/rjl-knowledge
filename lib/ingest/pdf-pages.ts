@@ -9,11 +9,14 @@ function loadCanvas() {
   return Promise.resolve(requireCanvas("@napi-rs/canvas") as typeof import("@napi-rs/canvas"));
 }
 
-export async function renderPdfPagesForVision(bytes: Buffer): Promise<SlideUpload[]> {
+export async function renderPdfPagesForVision(
+  bytes: Buffer,
+  options?: { maxPages?: number; scale?: number },
+): Promise<SlideUpload[]> {
   const { createIsomorphicCanvasFactory, getDocumentProxy, renderPageAsImage } = await import("unpdf");
   const CanvasFactory = await createIsomorphicCanvasFactory(loadCanvas);
   const pdf = await getDocumentProxy(new Uint8Array(bytes), { CanvasFactory });
-  const limit = Math.min(pdf.numPages || 0, MAX_PDF_VISION_PAGES);
+  const limit = Math.min(pdf.numPages || 0, options?.maxPages ?? MAX_PDF_VISION_PAGES);
   if (limit < 1) return [];
 
   const pages: SlideUpload[] = [];
@@ -21,7 +24,7 @@ export async function renderPdfPagesForVision(bytes: Buffer): Promise<SlideUploa
     try {
       const image = await renderPageAsImage(pdf, page, {
         canvasImport: loadCanvas,
-        scale: 1.35,
+        scale: options?.scale ?? 1.35,
       });
       pages.push({
         fileName: `page-${page}.png`,

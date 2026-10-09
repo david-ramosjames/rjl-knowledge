@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { KnowledgeCard } from "@/components/topics/knowledge-card";
 import { ArticleFooterActions } from "@/components/knowledge/article-footer-actions";
 import { OnThisPage } from "@/components/knowledge/on-this-page";
-import { SourceActions } from "@/components/knowledge/source-actions";
+import { SourceFileTile } from "@/components/knowledge/source-file-tile";
 import type { KnowledgeHeading } from "@/lib/knowledge/headings";
 import type { KnowledgeSearchResult } from "@/lib/search";
 
@@ -15,6 +15,7 @@ export function KnowledgePage({
   kindLabel,
   title,
   updatedLabel,
+  slug,
   sourceUrl,
   fileName,
   headings,
@@ -30,6 +31,7 @@ export function KnowledgePage({
   kindLabel: string;
   title: string;
   updatedLabel: string;
+  slug?: string;
   sourceUrl?: string | null;
   fileName?: string | null;
   headings: KnowledgeHeading[];
@@ -45,19 +47,19 @@ export function KnowledgePage({
         <Link href={backHref} className="text-sm text-muted-foreground hover:text-foreground">
           ← {backLabel}
         </Link>
-        <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
+        <div className="mt-5 flex flex-wrap items-start justify-between gap-6">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap gap-2">
               <Badge className="bg-white">{category}</Badge>
               <Badge className="bg-muted">{kindLabel}</Badge>
             </div>
             <h1 className="mt-3 font-serif text-3xl leading-tight tracking-tight sm:text-4xl">{title}</h1>
             <p className="mt-2 text-sm text-muted-foreground">{updatedLabel}</p>
-            <div className="mt-4">
-              <SourceActions sourceUrl={sourceUrl} fileName={fileName} />
-            </div>
           </div>
-          {adminHeader}
+          <div className="flex flex-wrap items-start gap-4">
+            {slug ? <SourceFileTile slug={slug} sourceUrl={sourceUrl} fileName={fileName} /> : null}
+            {adminHeader}
+          </div>
         </div>
       </header>
 

@@ -83,6 +83,19 @@ export function fileHostLabel(input: string | null | undefined): "Dropbox" | "Go
   return fileShareProvider(input) === "dropbox" ? "Dropbox" : "Google Drive";
 }
 
+export function fileKindFromName(fileName?: string | null) {
+  const lower = (fileName ?? "").toLowerCase();
+  if (lower.endsWith(".pdf")) return "PDF";
+  if (lower.endsWith(".doc") || lower.endsWith(".docx")) return "Word";
+  if (lower.endsWith(".xls") || lower.endsWith(".xlsx") || lower.endsWith(".csv")) return "Excel";
+  if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) return "PowerPoint";
+  if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".webp")) {
+    return "Image";
+  }
+  if (lower.endsWith(".txt") || lower.endsWith(".md")) return "Text";
+  return "File";
+}
+
 function isDropboxSharePath(url: URL) {
   const host = url.hostname.toLowerCase();
   if (host === "dl.dropboxusercontent.com" || host === "dl.dropbox.com") return true;

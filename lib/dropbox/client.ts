@@ -85,13 +85,13 @@ async function refreshDropboxAccessToken() {
   return parsed.access_token;
 }
 
-async function dropboxAuthHeaders(extra: Record<string, string> = {}) {
+async function dropboxAuthHeaders(extra: Record<string, string> = {}, options?: { pathRoot?: boolean }) {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${await getDropboxAccessToken()}`,
     ...extra,
   };
   const namespaceId = process.env.DROPBOX_NAMESPACE_ID?.trim();
-  if (namespaceId) {
+  if (namespaceId && options?.pathRoot !== false) {
     headers["Dropbox-API-Path-Root"] = JSON.stringify({
       ".tag": "namespace_id",
       namespace_id: namespaceId,
@@ -260,6 +260,38 @@ export async function downloadDropboxFile(input: {
   }
 
   return { bytes, name, contentType: response.headers.get("content-type") ?? "" };
+}
+
+export async function fetchDropboxThumbnail(input: { path?: string; sharedUrl?: string | null }) {
+  const resource = input.sharedUrl
+    ? { ".tag": "link" as const, url: input.sharedUrl, path: "" }
+    : input.path
+      ? { ".tag": "path" as const, path: input.path }
+      : null;
+  if (!resource) return null;
+
+  try {
+    const response = await fetch(`${CONTENT}/files/get_thumbnail_v2`, {
+      method: "POST",
+      headers: await dropboxAuthHeaders(
+        {
+          "Dropbox-API-Arg": JSON.stringify({
+            resource,
+            format: "jpeg",
+            size: "w640h480",
+            mode: "fitone_bestfit",
+          }),
+        },
+        { pathRoot: !input.sharedUrl },
+      ),
+    });
+    if (!response.ok) return null;
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (bytes.length < 80) return null;
+    return { bytes, mimeType: "image/jpeg" as const };
+  } catch {
+    return null;
+  }
 }
 
 export async function ensureDropboxSharedLink(path: string) {

@@ -139,6 +139,8 @@ model Article {
   searchText      String      @db.Text
   driveUrl        String?
   fileName        String?
+  thumbnailBytes  Bytes?
+  thumbnailMime   String?
   meetingId       String?     @unique
   status          TopicStatus @default(APPROVED)
   createdAt       DateTime    @default(now())

@@ -84,6 +84,7 @@ export default async function ArticlePage({
       kindLabel={kindLabel}
       title={article.title}
       updatedLabel={`Updated ${formatDate(article.updatedAt)}`}
+      slug={article.slug}
       sourceUrl={article.driveUrl}
       fileName={article.fileName}
       headings={headings}

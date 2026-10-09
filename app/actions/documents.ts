@@ -18,6 +18,7 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { fileNameFromShareUrl, normalizeFileShareUrl, optionalFileName } from "@/lib/file-links";
 import { ingestDocumentSource } from "@/lib/ingest/document";
+import { captureArticleThumbnail } from "@/lib/ingest/thumbnail";
 import { collectSlideUploads } from "@/lib/ingest/slides";
 import { normalizeCategory } from "@/lib/categories";
 import { AppError, ErrorCodes } from "@/lib/errors";
@@ -62,6 +63,7 @@ export async function createDocumentArticleAction(formData: FormData) {
   let body = "";
   let keyPoints: string[] = [];
   let keywords: string[] = [];
+  let previewPages = slides;
 
   try {
     if (slides.length > 0) {
@@ -83,6 +85,7 @@ export async function createDocumentArticleAction(formData: FormData) {
         pastedText,
       });
       fileName = fileName ?? ingested.fileName ?? null;
+      previewPages = ingested.pages ?? [];
       const generated = await generateArticleFromIngested({
         title: titleHint,
         category: categoryHint,
@@ -125,6 +128,13 @@ export async function createDocumentArticleAction(formData: FormData) {
     if (slides.length > 0) {
       await replaceArticleSlides(article.id, slides);
     }
+    await captureArticleThumbnail({
+      articleId: article.id,
+      fileName,
+      driveUrl,
+      pages: previewPages,
+      fileBytes: file ? Buffer.from(await file.arrayBuffer()) : null,
+    });
   } catch (error) {
     unstable_rethrow(error);
     documentErrorRedirect(error instanceof AppError ? error.code : ErrorCodes.DATABASE_FAILURE);

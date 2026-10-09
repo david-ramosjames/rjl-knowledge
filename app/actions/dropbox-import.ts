@@ -19,6 +19,7 @@ import {
   type DropboxImportFile,
 } from "@/lib/dropbox/import";
 import { ingestFileBuffer } from "@/lib/ingest/document";
+import { captureArticleThumbnail } from "@/lib/ingest/thumbnail";
 import { AppError } from "@/lib/errors";
 
 export type { DropboxImportFile };
@@ -120,6 +121,14 @@ export async function importDropboxFileAction(
       keywords: generated.keywords,
       driveUrl,
       fileName: downloaded.name,
+    });
+    await captureArticleThumbnail({
+      articleId: article.id,
+      fileName: downloaded.name,
+      driveUrl,
+      dropboxPath: file.path,
+      pages: ingested.pages,
+      fileBytes: downloaded.bytes,
     });
 
     revalidatePath("/");
