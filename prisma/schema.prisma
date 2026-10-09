@@ -164,3 +164,23 @@ model ArticleSlide {
 
   @@index([articleId, sortOrder])
 }
+
+model KnowledgeChunk {
+  id          String   @id @default(cuid())
+  kind        String
+  sourceId    String
+  chunkIndex  Int
+  title       String
+  slug        String
+  href        String
+  category    String
+  content     String   @db.Text
+  contentHash String
+  embedding   Unsupported("vector(1536)")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([kind, sourceId, chunkIndex])
+  @@index([kind, sourceId])
+  @@index([contentHash])
+}

@@ -17,7 +17,7 @@ export default async function HomePage() {
           Knowledge Hub
         </h1>
         <p className="mt-2 text-base text-muted-foreground sm:text-lg">
-          Search meetings, guides, and other knowledge about Ramos James Law.
+          Ask a question — the hub reads the articles, not just the titles.
         </p>
         <div className="mt-6">
           <SearchBar size="md" autoFocus />

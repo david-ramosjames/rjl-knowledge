@@ -41,6 +41,19 @@ export const synthesisResponseSchema = z.object({
   keywords: z.array(z.string()).default([]),
 });
 
+export const knowledgeAskResponseSchema = z.object({
+  found: z.boolean(),
+  answer: z.string().min(1),
+  citations: z
+    .array(
+      z.object({
+        kind: z.enum(["article", "topic"]),
+        id: z.string().min(1),
+      }),
+    )
+    .default([]),
+});
+
 export const articleResponseSchema = z.object({
   title: z.string().min(1),
   category: z.string().min(1),
@@ -451,4 +464,34 @@ Suggested category: ${input.category || "PI Mastermind"}
 Number of slides: ${input.slideCount}
 
 The images follow in order. Write one overall Knowledge Hub article from these slides. Do not split them into separate topics.`;
+}
+
+export function knowledgeAskSystemPrompt() {
+  return `You answer questions for Ramos James Law staff using only the Knowledge Hub passages provided.
+
+Rules:
+- Use ONLY the passages. If they do not contain the answer, set found=false.
+- When found=true, write a confident, useful answer in 2–5 short paragraphs. Lead with the direct answer.
+- Name the specific rule, form, naming convention, step, or person when the passages do.
+- Use **bold** for the few words staff will scan for.
+- Do not invent policy, process, case facts, or deadlines.
+- Do not mention being an AI.
+- Cite only passages you actually used. Prefer the fewest sources that cover the answer.
+
+Return JSON:
+{
+  "found": true,
+  "answer": "Readable answer. Use **bold** sparingly. Separate paragraphs with blank lines.",
+  "citations": [{ "kind": "article", "id": "source-id-from-the-passage" }]
+}`;
+}
+
+export function knowledgeAskUserPrompt(query: string, passages: string) {
+  return `Staff question:
+${query}
+
+Passages from the Knowledge Hub:
+${passages}
+
+Answer the question from these passages only.`;
 }

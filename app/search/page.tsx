@@ -1,3 +1,4 @@
+import { SearchAnswer } from "@/components/search/search-answer";
 import { SearchBar } from "@/components/search/search-bar";
 import { KnowledgeCard } from "@/components/topics/knowledge-card";
 import { DEFAULT_CATEGORIES, categoryFromSlug } from "@/lib/categories";
@@ -38,17 +39,24 @@ export default async function SearchPage({
         <p className="mt-2 text-sm text-muted-foreground">
           {results.length} result{results.length === 1 ? "" : "s"}
           {category ? ` in ${category}` : ""}
+          {query ? " · the hub also reads inside the articles" : ""}
         </p>
       </div>
 
-      {results.length === 0 ? (
+      {query ? <SearchAnswer query={query} category={category} /> : null}
+
+      {results.length === 0 && !query ? (
         <p className="mt-8 rounded-xl border border-dashed border-border px-5 py-8 text-sm text-muted-foreground">
-          {query || category
+          {category
             ? "No matching knowledge yet. Try a broader term, or browse from the homepage."
             : "Enter a search term, or choose a category from the homepage."}
         </p>
-      ) : (
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+      ) : results.length === 0 ? null : (
+        <div className="mt-8">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Matching pages
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
           {results.map((item) => (
             <KnowledgeCard
               key={`${item.kind}-${item.id}`}
@@ -61,6 +69,7 @@ export default async function SearchPage({
               meta={item.meta}
             />
           ))}
+          </div>
         </div>
       )}
     </main>

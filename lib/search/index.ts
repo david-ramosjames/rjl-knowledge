@@ -1,6 +1,5 @@
-// V1 search uses Postgres ILIKE plus tsvector ranking.
-// Keep this module as the only search entry point so semantic/pgvector
-// ranking can be added later without changing page contracts.
+// Keyword search stays here so pages can render matches immediately.
+// Semantic ranking and the hub answer live in lib/search/ask.ts.
 import { prisma } from "@/lib/db/prisma";
 import { Prisma, TopicStatus } from "@/lib/generated/prisma/client";
 import { articleKindLabel } from "@/lib/meetings/kinds";

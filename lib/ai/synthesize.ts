@@ -3,6 +3,7 @@ import { synthesisSystemPrompt, synthesisResponseSchema } from "@/lib/ai/prompts
 import { prisma } from "@/lib/db/prisma";
 import { AppError, ErrorCodes } from "@/lib/errors";
 import { logError } from "@/lib/logger";
+import { refreshKnowledgeIndex } from "@/lib/search/index-knowledge";
 import { excerptForRange, parseTranscript } from "@/lib/transcript/parse";
 import { asStringArray, buildSearchText, namedSpeakers, uniqueStrings } from "@/lib/utils";
 
@@ -97,6 +98,7 @@ ${discussionBlocks.join("\n\n")}`,
         }),
       },
     });
+    await refreshKnowledgeIndex("topic", topic.id);
   } catch (error) {
     if (options?.required) {
       if (error instanceof AppError) throw error;

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { CandidateStatus, MeetingStatus, TopicStatus } from "@/lib/generated/prisma/client";
 import { synthesizeTopicFromDiscussions } from "@/lib/ai/synthesize";
 import { AppError, ErrorCodes } from "@/lib/errors";
+import { refreshKnowledgeIndex, removeKnowledgeIndex } from "@/lib/search/index-knowledge";
 import { asStringArray, buildSearchText, normalizeTitle, slugify, uniqueStrings } from "@/lib/utils";
 
 async function uniqueSlug(title: string) {
@@ -158,6 +159,7 @@ export async function createTopicFromCandidate(candidateId: string) {
   });
 
   await synthesizeTopicFromDiscussions(topic.id);
+  await refreshKnowledgeIndex("topic", topic.id);
   await maybeMarkMeetingProcessed(candidate.meetingId);
   return topic;
 }
@@ -227,6 +229,7 @@ export async function addCandidateToExistingTopic(candidateId: string, topicId: 
   });
 
   await synthesizeTopicFromDiscussions(topic.id);
+  await refreshKnowledgeIndex("topic", topic.id);
   await maybeMarkMeetingProcessed(candidate.meetingId);
   return topic;
 }
@@ -271,5 +274,6 @@ export async function deleteTopic(topicId: string) {
     await tx.topic.delete({ where: { id: topic.id } });
   });
 
+  await removeKnowledgeIndex("topic", topic.id);
   return topic;
 }

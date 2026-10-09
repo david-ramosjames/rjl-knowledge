@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { TopicStatus } from "@/lib/generated/prisma/client";
 import { AppError, ErrorCodes } from "@/lib/errors";
 import { fileKeyVariants } from "@/lib/dropbox/import";
+import { refreshKnowledgeIndex, removeKnowledgeIndex } from "@/lib/search/index-knowledge";
 import { asLitEvents, asStringArray, buildSearchText, normalizeTitle, slugify, uniqueStrings } from "@/lib/utils";
 
 async function uniqueArticleSlug(title: string) {
@@ -37,7 +38,7 @@ export async function createArticleRecord(input: {
   const body = input.body.trim();
 
   try {
-    return await prisma.article.create({
+    const created = await prisma.article.create({
       data: {
         title,
         slug: await uniqueArticleSlug(title),
@@ -60,6 +61,8 @@ export async function createArticleRecord(input: {
         status: TopicStatus.APPROVED,
       },
     });
+    await refreshKnowledgeIndex("article", created.id);
+    return created;
   } catch {
     throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not save the article. Try again.", 500);
   }
@@ -89,7 +92,7 @@ export async function updateArticleRecord(
   }
 
   try {
-    return await prisma.article.update({
+    const updated = await prisma.article.update({
       where: { id: article.id },
       data: {
         summary,
@@ -107,6 +110,8 @@ export async function updateArticleRecord(
           }) + `\n${body}`,
       },
     });
+    await refreshKnowledgeIndex("article", updated.id);
+    return updated;
   } catch {
     throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not update the article. Try again.", 500);
   }
@@ -155,7 +160,7 @@ export async function upsertMeetingNoteArticle(input: {
 
   try {
     if (existing) {
-      return await prisma.article.update({
+      const updated = await prisma.article.update({
         where: { id: existing.id },
         data: {
           title,
@@ -169,9 +174,11 @@ export async function upsertMeetingNoteArticle(input: {
           searchText,
         },
       });
+      await refreshKnowledgeIndex("article", updated.id);
+      return updated;
     }
 
-    return await prisma.article.create({
+    const created = await prisma.article.create({
       data: {
         title,
         slug: await uniqueArticleSlug(title),
@@ -187,6 +194,8 @@ export async function upsertMeetingNoteArticle(input: {
         status: TopicStatus.APPROVED,
       },
     });
+    await refreshKnowledgeIndex("article", created.id);
+    return created;
   } catch {
     throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not save the review note. Try again.", 500);
   }
@@ -222,7 +231,7 @@ export async function updateArticleContent(
     .join("\n");
 
   try {
-    return await prisma.article.update({
+    const updated = await prisma.article.update({
       where: { id: article.id },
       data: {
         summary,
@@ -239,6 +248,8 @@ export async function updateArticleContent(
           }) + `\n${body}\n${trackerText}`,
       },
     });
+    await refreshKnowledgeIndex("article", updated.id);
+    return updated;
   } catch {
     throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not save the article edits. Try again.", 500);
   }
@@ -259,7 +270,7 @@ export async function renameArticle(articleId: string, title: string) {
   const keywords = asStringArray(article.keywords);
 
   try {
-    return await prisma.article.update({
+    const updated = await prisma.article.update({
       where: { id: article.id },
       data: {
         title: nextTitle,
@@ -274,6 +285,8 @@ export async function renameArticle(articleId: string, title: string) {
           }) + `\n${article.body}`,
       },
     });
+    await refreshKnowledgeIndex("article", updated.id);
+    return updated;
   } catch {
     throw new AppError(ErrorCodes.DATABASE_FAILURE, "Could not rename the article. Try again.", 500);
   }
@@ -394,5 +407,6 @@ export async function deleteArticle(articleId: string) {
     throw new AppError(ErrorCodes.NOT_FOUND, "Article not found.");
   }
   await prisma.article.delete({ where: { id: article.id } });
+  await removeKnowledgeIndex("article", article.id);
   return article;
 }

@@ -18,6 +18,26 @@ export function getOpenAIModel() {
   return process.env.OPENAI_MODEL || "gpt-4o";
 }
 
+export function getEmbeddingModel() {
+  return process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
+}
+
+export async function embedTexts(inputs: string[]) {
+  const texts = inputs.map((text) => text.replace(/\s+/g, " ").trim()).filter(Boolean);
+  if (texts.length === 0) return [];
+
+  const client = getOpenAIClient();
+  const response = await client.embeddings.create({
+    model: getEmbeddingModel(),
+    input: texts,
+  });
+
+  return response.data
+    .slice()
+    .sort((a, b) => a.index - b.index)
+    .map((item) => item.embedding);
+}
+
 export function extractJsonObject(text: string): unknown {
   const trimmed = text.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
