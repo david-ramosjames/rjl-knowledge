@@ -102,7 +102,10 @@ export async function askKnowledge(query: string, options?: { category?: string 
   if (q.length < 2) return null;
 
   try {
-    await backfillKnowledgeIndex(80);
+    const indexed = await prisma.knowledgeChunk.count();
+    if (indexed === 0) {
+      await backfillKnowledgeIndex(12);
+    }
   } catch (error) {
     logError("Knowledge backfill skipped", {
       message: error instanceof Error ? error.message : "unknown",

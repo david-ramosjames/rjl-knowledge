@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { RichNote } from "@/components/articles/rich-note";
+import { SearchThinking } from "@/components/search/search-thinking";
 import { Badge } from "@/components/ui/badge";
 import type { KnowledgeAskResult } from "@/lib/search/ask";
 
@@ -53,19 +54,7 @@ export function SearchAnswer({ query, category }: { query: string; category?: st
   if (status === "hidden") return null;
 
   if (status === "loading") {
-    return (
-      <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-white shadow-[0_8px_30px_rgba(28,25,23,0.04)]">
-        <div className="flex items-center gap-3 border-b border-border bg-[color-mix(in_srgb,var(--primary)_6%,white)] px-5 py-3">
-          <Sparkles className="size-4 text-accent" />
-          <p className="text-sm font-medium text-primary">Reading the hub…</p>
-        </div>
-        <div className="space-y-3 px-5 py-5">
-          <div className="h-4 w-11/12 animate-pulse rounded bg-muted" />
-          <div className="h-4 w-10/12 animate-pulse rounded bg-muted" />
-          <div className="h-4 w-8/12 animate-pulse rounded bg-muted" />
-        </div>
-      </section>
-    );
+    return <SearchThinking />;
   }
 
   if (!result) return null;
