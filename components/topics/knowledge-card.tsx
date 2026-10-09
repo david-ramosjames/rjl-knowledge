@@ -25,8 +25,8 @@ export function KnowledgeCard({
   const reviewLabel = articleKindLabel({ category });
   const kindLabel = reviewLabel !== "Document" ? reviewLabel : kind === "article" ? "Document" : "Meeting";
   const dateLabel = lastDiscussedAt ? formatCompactDate(lastDiscussedAt) : null;
-  const sourceLabel = kind === "topic" ? meta || "Meeting" : kindLabel;
-  const footer = dateLabel ? `${dateLabel} · ${sourceLabel}` : sourceLabel;
+  const meetingName = kind === "topic" && meta && meta !== "Meeting" ? meta : null;
+  const footer = dateLabel ? `${dateLabel} · ${kindLabel}` : kindLabel;
 
   return (
     <Link href={href} className="block h-full">
@@ -34,6 +34,11 @@ export function KnowledgeCard({
         <div className="mb-3 flex flex-wrap gap-2">
           <Badge className="bg-white">{category}</Badge>
           <Badge className="bg-muted">{kindLabel}</Badge>
+          {meetingName ? (
+            <Badge className="max-w-full bg-white" title={meetingName}>
+              <span className="truncate">{meetingName}</span>
+            </Badge>
+          ) : null}
         </div>
         <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
         <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">{summary}</p>
