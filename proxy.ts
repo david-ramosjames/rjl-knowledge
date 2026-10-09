@@ -6,7 +6,12 @@ export function proxy(request: NextRequest) {
   if (!isAuthEnabled()) return NextResponse.next();
 
   const { pathname } = request.nextUrl;
-  if (pathname === "/login" || pathname.startsWith("/api/auth/google")) {
+  if (
+    pathname === "/login" ||
+    pathname.startsWith("/api/auth/google") ||
+    pathname.startsWith("/api/mcp") ||
+    pathname.startsWith("/api/slack/")
+  ) {
     return NextResponse.next();
   }
 

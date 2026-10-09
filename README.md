@@ -66,6 +66,10 @@ Admin:
 | `GOOGLE_ALLOWED_EMAILS` | No | Comma-separated allowlist of Google emails |
 | `ADMIN_EMAILS` | No | Comma-separated emails that can open Admin, e.g. `david@ramosjames.com` |
 | `AUTH_PASSWORD` | No | Password login only if Google is not configured |
+| `SLACK_SIGNING_SECRET` | For Slack | Verifies Slackbot MCP, slash commands, and mentions |
+| `SLACK_BOT_TOKEN` | For @mentions | `xoxb-` token so the bot can reply in threads |
+| `SLACK_TEAM_ID` | No | Limit Slack calls to one workspace, e.g. `T01234567` |
+| `MCP_SHARED_SECRET` | No | Bearer token for testing `/api/mcp` outside Slack |
 
 Do not expose `OPENAI_API_KEY`, `DATABASE_URL`, or `GOOGLE_CLIENT_SECRET` to the browser. They are server-only.
 
@@ -224,8 +228,9 @@ GOOGLE_ALLOWED_DOMAIN=ramosjameslaw.com
 3. Attach / share the Postgres `DATABASE_URL` variable with the **app** service using a Railway variable reference. Do not leave it only on the Postgres service.
 4. Add `OPENAI_API_KEY`.
 5. Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `AUTH_URL`.
-6. Deploy. Nixpacks is configured to use Node 22.
-7. Open the public URL, visit `/admin`, and process a meeting.
+6. Optional: add Slack vars from `slack/manifest.json` so Slackbot and `/knowledge` can answer from the hub.
+7. Deploy. Nixpacks is configured to use Node 22.
+8. Open the public URL, visit `/admin`, and process a meeting.
 
 If build fails on `prisma generate`, confirm `postinstall` ran and that Node 22 is in use.
 
@@ -267,6 +272,30 @@ To add a firm guide or naming convention:
 3. Upload the file if sharing is restricted, or for PDFs and Word documents.
 4. Click **Ingest and publish**. The AI reads the document and writes the searchable article. Staff download the original from Dropbox or Drive.
 
+## Slack and Slackbot MCP
+
+Staff can ask the hub in Slack. Slackbot uses the MCP server; `/knowledge` and `@Knowledge Hub` work even if Slackbot MCP is not enabled yet.
+
+1. Copy `slack/manifest.json` and replace `YOUR-HUB-DOMAIN` with the public Railway host, for example `rjl-knowledge-production.up.railway.app` (no `https://` prefix in the host, but keep it in the URLs).
+2. Create an app at [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From a manifest**.
+3. Install it to the Ramos James workspace.
+4. On Railway, set `SLACK_SIGNING_SECRET` and `SLACK_BOT_TOKEN` from the app’s **Basic Information** and **OAuth & Permissions**. Optionally set `SLACK_TEAM_ID`.
+5. In the Slack app, confirm:
+   - MCP Server URL: `https://YOUR-HUB-DOMAIN/api/mcp` with **Slack identity auth**
+   - Event Subscriptions request URL: `https://YOUR-HUB-DOMAIN/api/slack/events`
+   - Slash command `/knowledge` request URL: `https://YOUR-HUB-DOMAIN/api/slack/commands`
+6. Redeploy if the event URL was verified before the service was live.
+
+Then staff can:
+
+- Ask Slackbot a firm-process question (Slackbot calls `ask_knowledge_hub` and should include the article links)
+- `/knowledge how do we name PI intake files?`
+- `@Knowledge Hub what’s the intake naming convention?`
+
+Replies include a short answer plus links into the Knowledge Hub. They still need to be signed in to open those pages.
+
+Do not use Slack’s **no auth** MCP option. The hub is confidential; Slack identity signing is required.
+
 ## Architecture
 
 ```text
@@ -275,12 +304,14 @@ To add a firm guide or naming convention:
 /lib/db         Prisma client and topic/meeting writes
 /lib/ai         OpenAI extraction, article writing, and synthesis
 /lib/ingest     Drive/upload document text extraction
-/lib/search     Postgres full-text / ILIKE search
+/lib/search     Keyword search, embeddings, and hub answers
+/lib/mcp        Slackbot MCP tools
+/lib/slack      Slack signature, slash command, and mention replies
 /lib/youtube    URL parsing and timestamped watch links
 /prisma         Schema, migrations, seed
 ```
 
-Search is isolated in `lib/search` so semantic / pgvector search can be added later without rewriting the UI.
+Search lives in `lib/search`. Slackbot reaches it through `/api/mcp`.
 
 ## Privacy notes
 
