@@ -279,7 +279,7 @@ Staff can ask the hub in Slack. Slackbot uses the MCP server; `/knowledge` and `
 1. Copy `slack/manifest.json` and replace `YOUR-HUB-DOMAIN` with the public Railway host, for example `rjl-knowledge-production.up.railway.app` (no `https://` prefix in the host, but keep it in the URLs).
 2. Create an app at [api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From a manifest**.
 3. Install it to the Ramos James workspace.
-4. On Railway, set `SLACK_SIGNING_SECRET` and `SLACK_BOT_TOKEN` from the app’s **Basic Information** and **OAuth & Permissions**. Optionally set `SLACK_TEAM_ID`.
+4. On Railway, set `SLACK_SIGNING_SECRET` from **Basic Information → Signing Secret** (not the Client Secret and not the bot token) and `SLACK_BOT_TOKEN` from **OAuth & Permissions**. Redeploy after saving. Optionally set `SLACK_TEAM_ID` to the workspace ID that starts with `T`.
 5. In the Slack app, confirm:
    - MCP Server URL: `https://YOUR-HUB-DOMAIN/api/mcp` with **Slack identity auth**
    - Event Subscriptions request URL: `https://YOUR-HUB-DOMAIN/api/slack/events`
@@ -295,6 +295,8 @@ Then staff can:
 Replies include a short answer plus links into the Knowledge Hub. They still need to be signed in to open those pages.
 
 Do not use Slack’s **no auth** MCP option. The hub is confidential; Slack identity signing is required.
+
+If Slackbot says the `knowledge_hub` server is enabled but **rejected Slack’s request as unauthorized**, the hub returned HTTP 401. That almost always means `SLACK_SIGNING_SECRET` is missing or is the Client Secret instead of the Signing Secret. After it is set on Railway, reconnect the server in Slackbot. `/knowledge` and `@Knowledge Hub` still work while MCP is reconnecting.
 
 ## Architecture
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { handleMcpRequest } from "@/lib/mcp/handler";
-import { slackTeamAllowed, verifyMcpAuthorization } from "@/lib/slack/signature";
+import { logError } from "@/lib/logger";
+import { mcpAuthFailureReason, slackTeamAllowed, verifyMcpAuthorization } from "@/lib/slack/signature";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -23,6 +24,12 @@ export async function DELETE() {
 export async function POST(request: Request) {
   const rawBody = await request.text();
   if (!verifyMcpAuthorization(request, rawBody)) {
+    logError("Slack MCP request rejected", {
+      reason: mcpAuthFailureReason(request),
+      hasAuthorization: Boolean(request.headers.get("authorization")),
+      hasSlackTimestamp: Boolean(request.headers.get("x-slack-request-timestamp")),
+      hasSlackSignature: Boolean(request.headers.get("x-slack-signature")),
+    });
     return NextResponse.json(
       { jsonrpc: "2.0", error: { code: -32600, message: "Unauthorized" }, id: null },
       { status: 401, headers: mcpHeaders() },

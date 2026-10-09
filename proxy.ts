@@ -10,7 +10,8 @@ export function proxy(request: NextRequest) {
     pathname === "/login" ||
     pathname.startsWith("/api/auth/google") ||
     pathname.startsWith("/api/mcp") ||
-    pathname.startsWith("/api/slack/")
+    pathname.startsWith("/api/slack/") ||
+    pathname.startsWith("/.well-known/")
   ) {
     return NextResponse.next();
   }
