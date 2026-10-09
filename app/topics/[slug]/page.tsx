@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { DeleteTopicButton } from "@/components/admin/delete-topic-button";
+import { RecategorizeTopicForm } from "@/components/admin/recategorize-topic-form";
 import { RefreshTopicButton } from "@/components/admin/refresh-topic-button";
 import { ErrorBanner } from "@/components/error-banner";
 import { extractNoteHeadings, RichNote } from "@/components/articles/rich-note";
@@ -80,9 +81,24 @@ export default async function TopicPage({
         ) : null
       }
     >
+      {isAdmin ? (
+        <div className="mb-8">
+          <RecategorizeTopicForm
+            topicId={topic.id}
+            category={topic.category}
+            returnTo={`/topics/${topic.slug}`}
+          />
+        </div>
+      ) : null}
+
       {query.error === "refresh" ? (
         <div className="mb-8">
           <ErrorBanner message="The AI could not rewrite this topic from the transcript. Try Refresh again in a moment." />
+        </div>
+      ) : null}
+      {query.error === "category" ? (
+        <div className="mb-8">
+          <ErrorBanner message="The category could not be saved. Try again." />
         </div>
       ) : null}
 

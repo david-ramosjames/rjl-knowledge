@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DeleteTopicButton } from "@/components/admin/delete-topic-button";
+import { RecategorizeTopicForm } from "@/components/admin/recategorize-topic-form";
 import { RefreshTopicButton } from "@/components/admin/refresh-topic-button";
 import { ErrorBanner } from "@/components/error-banner";
 import { Card } from "@/components/ui/card";
@@ -41,6 +42,11 @@ export default async function AdminTopicsPage({
           <ErrorBanner message="The AI could not rewrite that topic from the transcript. Try again in a moment." />
         </div>
       ) : null}
+      {query.error === "category" ? (
+        <div className="mt-6">
+          <ErrorBanner message="The category could not be saved. Try again." />
+        </div>
+      ) : null}
 
       <Card className="mt-8 overflow-hidden">
         <table className="w-full text-left text-sm">
@@ -70,7 +76,13 @@ export default async function AdminTopicsPage({
                       {topic.title}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{topic.category}</td>
+                  <td className="px-4 py-3">
+                    <RecategorizeTopicForm
+                      topicId={topic.id}
+                      category={topic.category}
+                      returnTo="/admin/topics"
+                    />
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {topic.lastDiscussedAt ? formatCompactDate(topic.lastDiscussedAt) : "—"}
                   </td>

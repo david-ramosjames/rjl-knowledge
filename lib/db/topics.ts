@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { CandidateStatus, MeetingStatus, TopicStatus } from "@/lib/generated/prisma/client";
 import { synthesizeTopicFromDiscussions } from "@/lib/ai/synthesize";
+import { normalizeCategory } from "@/lib/categories";
 import { AppError, ErrorCodes } from "@/lib/errors";
 import { refreshKnowledgeIndex, removeKnowledgeIndex } from "@/lib/search/index-knowledge";
 import { asStringArray, buildSearchText, normalizeTitle, slugify, uniqueStrings } from "@/lib/utils";
@@ -311,6 +312,30 @@ export async function restoreCandidate(candidateId: string) {
   });
   await markMeetingAwaitingReview(candidate.meetingId);
   return candidate;
+}
+
+export async function recategorizeTopic(topicId: string, category: string) {
+  const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+  if (!topic || topic.status !== TopicStatus.APPROVED) {
+    throw new AppError(ErrorCodes.NOT_FOUND, "Topic not found.");
+  }
+
+  const nextCategory = normalizeCategory(category);
+  const updated = await prisma.topic.update({
+    where: { id: topicId },
+    data: {
+      category: nextCategory,
+      searchText: buildSearchText({
+        title: topic.title,
+        category: nextCategory,
+        summary: topic.summary,
+        keyPoints: asStringArray(topic.keyPoints),
+        keywords: asStringArray(topic.keywords),
+      }),
+    },
+  });
+  await refreshKnowledgeIndex("topic", topic.id);
+  return updated;
 }
 
 export async function restoreIgnoredCandidates(meetingId: string) {

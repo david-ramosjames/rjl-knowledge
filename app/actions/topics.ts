@@ -10,6 +10,7 @@ import {
   createTopicFromCandidate,
   deleteTopic,
   ignoreCandidate,
+  recategorizeTopic,
   restoreCandidate,
   restoreIgnoredCandidates,
   updateCandidate,
@@ -154,6 +155,40 @@ export async function ignoreCandidateAction(formData: FormData) {
       error: error instanceof AppError ? error.message : "Could not ignore this topic.",
     };
   }
+}
+
+export async function recategorizeTopicAction(formData: FormData) {
+  await requireAdmin();
+  const topicId = String(formData.get("topicId") ?? "").trim();
+  const category = String(formData.get("category") ?? "").trim();
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+  if (!topicId) redirect("/admin/topics");
+
+  const existing = await prisma.topic.findUnique({
+    where: { id: topicId },
+    select: { slug: true },
+  });
+  if (!existing) redirect("/admin/topics?error=category");
+
+  const fallback = returnTo.startsWith("/topics/")
+    ? `/topics/${existing.slug}?error=category`
+    : "/admin/topics?error=category";
+
+  if (!category) redirect(fallback);
+
+  try {
+    await recategorizeTopic(topicId, category);
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect(fallback);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/search");
+  revalidatePath("/admin");
+  revalidatePath("/admin/topics");
+  revalidatePath(`/topics/${existing.slug}`);
+  redirect(returnTo.startsWith("/topics/") ? `/topics/${existing.slug}` : "/admin/topics");
 }
 
 export async function refreshTopicAction(formData: FormData) {
