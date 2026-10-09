@@ -80,16 +80,37 @@ export default async function TopicPage({
           </div>
         ) : null
       }
-    >
-      {isAdmin ? (
-        <div className="mb-8">
+      adminCategory={
+        isAdmin ? (
           <RecategorizeTopicForm
             topicId={topic.id}
             category={topic.category}
             returnTo={`/topics/${topic.slug}`}
+            idSuffix="header"
           />
-        </div>
-      ) : null}
+        ) : null
+      }
+      adminFooter={
+        isAdmin ? (
+          <div className="mt-10 rounded-2xl border border-border bg-white px-5 py-8 sm:px-9">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Edit this topic
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Change the homepage category here. This does not re-run the AI.
+            </p>
+            <div className="mt-5">
+              <RecategorizeTopicForm
+                topicId={topic.id}
+                category={topic.category}
+                returnTo={`/topics/${topic.slug}`}
+                idSuffix="footer"
+              />
+            </div>
+          </div>
+        ) : null
+      }
+    >
 
       {query.error === "refresh" ? (
         <div className="mb-8">

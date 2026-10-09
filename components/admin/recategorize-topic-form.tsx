@@ -8,20 +8,26 @@ export function RecategorizeTopicForm({
   topicId,
   category,
   returnTo,
+  idSuffix = "category",
 }: {
   topicId: string;
   category: string;
   returnTo: string;
+  idSuffix?: string;
 }) {
-  const listId = `rjl-categories-${topicId}`;
+  const fieldId = `category-${topicId}-${idSuffix}`;
+  const listId = `rjl-categories-${topicId}-${idSuffix}`;
   return (
-    <form action={recategorizeTopicAction} className="flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:items-end">
+    <form
+      action={recategorizeTopicAction}
+      className="not-prose flex w-full max-w-xl flex-col gap-2 rounded-xl border border-border bg-muted/40 p-3 sm:flex-row sm:items-end"
+    >
       <input type="hidden" name="topicId" value={topicId} />
       <input type="hidden" name="returnTo" value={returnTo} />
       <div className="min-w-0 flex-1 space-y-1">
-        <Label htmlFor={`category-${topicId}`}>Category</Label>
+        <Label htmlFor={fieldId}>Category</Label>
         <Input
-          id={`category-${topicId}`}
+          id={fieldId}
           name="category"
           list={listId}
           required

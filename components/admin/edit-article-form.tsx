@@ -1,25 +1,45 @@
 import { editArticleAction } from "@/app/actions/documents";
 import { SubmitButton } from "@/components/submit-button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DEFAULT_CATEGORIES } from "@/lib/categories";
 import type { LitEventRow } from "@/lib/utils";
 
 export function EditArticleForm({
   articleId,
+  category,
   summary,
   body,
   keyPoints,
   litEvents,
 }: {
   articleId: string;
+  category: string;
   summary: string;
   body: string;
   keyPoints: string[];
   litEvents: LitEventRow[];
 }) {
+  const listId = `rjl-categories-${articleId}`;
   return (
     <form action={editArticleAction} className="space-y-5">
       <input type="hidden" name="articleId" value={articleId} />
+      <div className="space-y-2">
+        <Label htmlFor={`category-${articleId}`}>Category</Label>
+        <Input
+          id={`category-${articleId}`}
+          name="category"
+          list={listId}
+          required
+          defaultValue={category}
+        />
+        <datalist id={listId}>
+          {DEFAULT_CATEGORIES.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
+      </div>
       <div className="space-y-2">
         <Label htmlFor={`summary-${articleId}`}>Overview</Label>
         <Textarea id={`summary-${articleId}`} name="summary" required defaultValue={summary} rows={5} />

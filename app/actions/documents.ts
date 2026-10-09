@@ -283,6 +283,7 @@ function parseLitEventLines(value: string) {
 export async function editArticleAction(formData: FormData) {
   await requireAdmin();
   const articleId = String(formData.get("articleId") ?? "").trim();
+  const category = String(formData.get("category") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
   const keyPoints = String(formData.get("keyPoints") ?? "")
@@ -295,6 +296,7 @@ export async function editArticleAction(formData: FormData) {
 
   try {
     await updateArticleContent(articleId, {
+      category,
       summary,
       body,
       keyPoints,

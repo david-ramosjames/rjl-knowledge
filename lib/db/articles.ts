@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { TopicStatus } from "@/lib/generated/prisma/client";
+import { normalizeCategory } from "@/lib/categories";
 import { AppError, ErrorCodes } from "@/lib/errors";
 import { fileKeyVariants } from "@/lib/dropbox/import";
 import { refreshKnowledgeIndex, removeKnowledgeIndex } from "@/lib/search/index-knowledge";
@@ -204,6 +205,7 @@ export async function upsertMeetingNoteArticle(input: {
 export async function updateArticleContent(
   articleId: string,
   input: {
+    category?: string;
     summary: string;
     body: string;
     keyPoints: string[];
@@ -217,6 +219,7 @@ export async function updateArticleContent(
 
   const summary = input.summary.trim();
   const body = input.body.trim();
+  const category = normalizeCategory(input.category ?? article.category);
   const keyPoints = uniqueStrings(input.keyPoints);
   const keywords = asStringArray(article.keywords);
   const litEvents = (input.litEvents ?? asLitEvents(article.litEvents)).filter(
@@ -234,6 +237,7 @@ export async function updateArticleContent(
     const updated = await prisma.article.update({
       where: { id: article.id },
       data: {
+        category,
         summary,
         body,
         keyPoints,
@@ -241,7 +245,7 @@ export async function updateArticleContent(
         searchText:
           buildSearchText({
             title: article.title,
-            category: article.category,
+            category,
             summary,
             keyPoints,
             keywords,

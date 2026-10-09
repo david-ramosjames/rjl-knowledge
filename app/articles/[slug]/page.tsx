@@ -110,6 +110,7 @@ export default async function ArticlePage({
             <div className="mt-5">
               <EditArticleForm
                 articleId={article.id}
+                category={article.category}
                 summary={article.summary}
                 body={article.body}
                 keyPoints={keyPoints}

@@ -22,6 +22,7 @@ export function KnowledgePage({
   related,
   reportHref,
   adminHeader,
+  adminCategory,
   adminFooter,
   children,
 }: {
@@ -38,6 +39,7 @@ export function KnowledgePage({
   related: KnowledgeSearchResult[];
   reportHref: string;
   adminHeader?: ReactNode;
+  adminCategory?: ReactNode;
   adminFooter?: ReactNode;
   children: React.ReactNode;
 }) {
@@ -55,6 +57,7 @@ export function KnowledgePage({
             </div>
             <h1 className="mt-3 font-serif text-3xl leading-tight tracking-tight sm:text-4xl">{title}</h1>
             <p className="mt-2 text-sm text-muted-foreground">{updatedLabel}</p>
+            {adminCategory ? <div className="mt-4 max-w-xl">{adminCategory}</div> : null}
           </div>
           <div className="flex flex-wrap items-start gap-4">
             {slug ? <SourceFileTile slug={slug} sourceUrl={sourceUrl} fileName={fileName} /> : null}
