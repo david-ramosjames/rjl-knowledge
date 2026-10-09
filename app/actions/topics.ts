@@ -10,6 +10,8 @@ import {
   createTopicFromCandidate,
   deleteTopic,
   ignoreCandidate,
+  restoreCandidate,
+  restoreIgnoredCandidates,
   updateCandidate,
 } from "@/lib/db/topics";
 import { AppError } from "@/lib/errors";
@@ -105,6 +107,38 @@ export async function addToExistingTopicAction(formData: FormData) {
   }
 }
 
+export async function restoreCandidateAction(formData: FormData) {
+  await requireAdmin();
+  const candidateId = String(formData.get("candidateId") ?? "");
+  const meetingId = String(formData.get("meetingId") ?? "");
+  try {
+    await restoreCandidate(candidateId);
+    revalidatePath("/admin");
+    revalidatePath(`/admin/meetings/${meetingId}/review`);
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof AppError ? error.message : "Could not restore this topic.",
+    };
+  }
+}
+
+export async function restoreIgnoredCandidatesAction(formData: FormData) {
+  await requireAdmin();
+  const meetingId = String(formData.get("meetingId") ?? "").trim();
+  if (!meetingId) redirect("/admin");
+  try {
+    await restoreIgnoredCandidates(meetingId);
+  } catch (error) {
+    unstable_rethrow(error);
+    redirect(`/admin/meetings/${meetingId}/review?error=restore`);
+  }
+  revalidatePath("/admin");
+  revalidatePath(`/admin/meetings/${meetingId}/review`);
+  redirect(`/admin/meetings/${meetingId}/review`);
+}
+
 export async function ignoreCandidateAction(formData: FormData) {
   await requireAdmin();
   const candidateId = String(formData.get("candidateId") ?? "");
@@ -169,6 +203,7 @@ export async function deleteTopicAction(formData: FormData) {
   revalidatePath("/search");
   revalidatePath("/admin");
   revalidatePath("/admin/topics");
+  revalidatePath("/admin/meetings");
   if (slug) revalidatePath(`/topics/${slug}`);
   redirect("/admin/topics");
 }

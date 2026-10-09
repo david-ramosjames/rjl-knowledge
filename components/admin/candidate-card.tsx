@@ -6,6 +6,7 @@ import {
   approveNewTopicAction,
   editCandidateAction,
   ignoreCandidateAction,
+  restoreCandidateAction,
 } from "@/app/actions/topics";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +48,8 @@ export function CandidateCard({ candidate, meetingId }: { candidate: Candidate; 
   const keyPoints = asStringArray(candidate.keyPoints);
   const keywords = asStringArray(candidate.keywords);
   const speakers = namedSpeakers(asStringArray(candidate.speakers));
-  const disabled = candidate.status !== "PENDING";
+  const disabled = candidate.status === "APPROVED";
+  const ignored = candidate.status === "IGNORED";
 
   async function runAction(action: (formData: FormData) => Promise<{ ok: boolean; error?: string }>, formData: FormData) {
     setError(null);
@@ -75,7 +77,7 @@ export function CandidateCard({ candidate, meetingId }: { candidate: Candidate; 
         <StatusPill status={candidate.status} />
       </div>
 
-      {candidate.suggestedTopic && candidate.status === "PENDING" ? (
+      {candidate.suggestedTopic && candidate.status !== "APPROVED" ? (
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
           <div className="font-medium text-amber-950">Possible existing topic</div>
           <p className="mt-1 text-amber-900">
@@ -189,13 +191,23 @@ export function CandidateCard({ candidate, meetingId }: { candidate: Candidate; 
           <Button type="button" variant="outline" onClick={() => setEditing(true)}>
             Edit
           </Button>
-          <form action={(formData) => runAction(ignoreCandidateAction, formData)}>
-            <input type="hidden" name="candidateId" value={candidate.id} />
-            <input type="hidden" name="meetingId" value={meetingId} />
-            <SubmitButton pendingLabel="Ignoring…" variant="ghost">
-              Ignore
-            </SubmitButton>
-          </form>
+          {ignored ? (
+            <form action={(formData) => runAction(restoreCandidateAction, formData)}>
+              <input type="hidden" name="candidateId" value={candidate.id} />
+              <input type="hidden" name="meetingId" value={meetingId} />
+              <SubmitButton pendingLabel="Restoring…" variant="outline">
+                Bring back
+              </SubmitButton>
+            </form>
+          ) : (
+            <form action={(formData) => runAction(ignoreCandidateAction, formData)}>
+              <input type="hidden" name="candidateId" value={candidate.id} />
+              <input type="hidden" name="meetingId" value={meetingId} />
+              <SubmitButton pendingLabel="Ignoring…" variant="ghost">
+                Ignore
+              </SubmitButton>
+            </form>
+          )}
         </div>
       ) : null}
 

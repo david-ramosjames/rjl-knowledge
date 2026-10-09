@@ -16,6 +16,17 @@ async function uniqueSlug(title: string) {
   return slug;
 }
 
+function isReviewable(status: CandidateStatus) {
+  return status === CandidateStatus.PENDING || status === CandidateStatus.IGNORED;
+}
+
+async function markMeetingAwaitingReview(meetingId: string) {
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: { status: MeetingStatus.AWAITING_REVIEW, processingError: null },
+  });
+}
+
 async function maybeMarkMeetingProcessed(meetingId: string) {
   const pending = await prisma.topicCandidate.count({
     where: { meetingId, status: CandidateStatus.PENDING },
@@ -43,8 +54,8 @@ export async function updateCandidate(
   },
 ) {
   const candidate = await prisma.topicCandidate.findUnique({ where: { id: candidateId } });
-  if (!candidate || candidate.status !== CandidateStatus.PENDING) {
-    throw new AppError(ErrorCodes.VALIDATION, "Only pending topics can be edited.");
+  if (!candidate || !isReviewable(candidate.status)) {
+    throw new AppError(ErrorCodes.VALIDATION, "Only topics that still need review can be edited.");
   }
 
   const existingTopics = await prisma.topic.findMany({
@@ -103,7 +114,7 @@ export async function createTopicFromCandidate(candidateId: string) {
     include: { meeting: true },
   });
   if (!candidate) throw new AppError(ErrorCodes.NOT_FOUND, "Topic not found.");
-  if (candidate.status !== CandidateStatus.PENDING) {
+  if (!isReviewable(candidate.status)) {
     throw new AppError(ErrorCodes.VALIDATION, "This topic has already been reviewed.");
   }
 
@@ -170,7 +181,7 @@ export async function addCandidateToExistingTopic(candidateId: string, topicId: 
     include: { meeting: true },
   });
   if (!candidate) throw new AppError(ErrorCodes.NOT_FOUND, "Topic not found.");
-  if (candidate.status !== CandidateStatus.PENDING) {
+  if (!isReviewable(candidate.status)) {
     throw new AppError(ErrorCodes.VALIDATION, "This topic has already been reviewed.");
   }
 
@@ -262,10 +273,15 @@ export async function deleteTopic(topicId: string) {
     throw new AppError(ErrorCodes.NOT_FOUND, "Topic not found.");
   }
 
+  const linkedMeetings = await prisma.topicCandidate.findMany({
+    where: { approvedTopicId: topic.id },
+    select: { meetingId: true },
+  });
+
   await prisma.$transaction(async (tx) => {
     await tx.topicCandidate.updateMany({
       where: { approvedTopicId: topic.id },
-      data: { status: CandidateStatus.IGNORED, approvedTopicId: null },
+      data: { status: CandidateStatus.PENDING, approvedTopicId: null },
     });
     await tx.topicCandidate.updateMany({
       where: { suggestedTopicId: topic.id },
@@ -274,6 +290,34 @@ export async function deleteTopic(topicId: string) {
     await tx.topic.delete({ where: { id: topic.id } });
   });
 
+  for (const meetingId of uniqueStrings(linkedMeetings.map((row) => row.meetingId))) {
+    await markMeetingAwaitingReview(meetingId);
+  }
+
   await removeKnowledgeIndex("topic", topic.id);
   return topic;
+}
+
+export async function restoreCandidate(candidateId: string) {
+  const candidate = await prisma.topicCandidate.findUnique({ where: { id: candidateId } });
+  if (!candidate) throw new AppError(ErrorCodes.NOT_FOUND, "Topic not found.");
+  if (candidate.status !== CandidateStatus.IGNORED) {
+    throw new AppError(ErrorCodes.VALIDATION, "Only ignored topics can be brought back.");
+  }
+
+  await prisma.topicCandidate.update({
+    where: { id: candidateId },
+    data: { status: CandidateStatus.PENDING, approvedTopicId: null },
+  });
+  await markMeetingAwaitingReview(candidate.meetingId);
+  return candidate;
+}
+
+export async function restoreIgnoredCandidates(meetingId: string) {
+  const updated = await prisma.topicCandidate.updateMany({
+    where: { meetingId, status: CandidateStatus.IGNORED },
+    data: { status: CandidateStatus.PENDING, approvedTopicId: null },
+  });
+  if (updated.count > 0) await markMeetingAwaitingReview(meetingId);
+  return updated.count;
 }

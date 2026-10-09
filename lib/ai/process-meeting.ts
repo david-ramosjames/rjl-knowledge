@@ -100,8 +100,19 @@ export async function processMeeting(meetingId: string, options?: { force?: bool
     });
 
     await prisma.topicCandidate.deleteMany({
-      where: { meetingId: meeting.id, status: CandidateStatus.PENDING },
+      where: {
+        meetingId: meeting.id,
+        status: { in: [CandidateStatus.PENDING, CandidateStatus.IGNORED] },
+      },
     });
+
+    const remaining = await prisma.topicCandidate.findMany({
+      where: { meetingId: meeting.id },
+      select: { id: true, title: true, status: true },
+    });
+    const remainingByTitle = new Map(
+      remaining.map((candidate) => [normalizeTitle(candidate.title), candidate]),
+    );
 
     for (const discussion of discussions) {
       const startSeconds = Math.max(0, discussion.start_seconds);
@@ -117,6 +128,9 @@ export async function processMeeting(meetingId: string, options?: { force?: bool
         },
         existingTopics,
       );
+
+      const existing = remainingByTitle.get(normalizeTitle(discussion.title));
+      if (existing?.status === CandidateStatus.APPROVED) continue;
 
       await prisma.topicCandidate.create({
         data: {
