@@ -12,6 +12,7 @@ export function KnowledgeCard({
   category,
   summary,
   lastDiscussedAt,
+  meta,
 }: {
   kind: KnowledgeKind;
   title: string;
@@ -24,6 +25,8 @@ export function KnowledgeCard({
   const reviewLabel = articleKindLabel({ category });
   const kindLabel = reviewLabel !== "Document" ? reviewLabel : kind === "article" ? "Document" : "Meeting";
   const dateLabel = lastDiscussedAt ? formatCompactDate(lastDiscussedAt) : null;
+  const sourceLabel = kind === "topic" ? meta || "Meeting" : kindLabel;
+  const footer = dateLabel ? `${dateLabel} · ${sourceLabel}` : sourceLabel;
 
   return (
     <Link href={href} className="block h-full">
@@ -34,8 +37,8 @@ export function KnowledgeCard({
         </div>
         <h3 className="text-lg font-semibold tracking-tight text-foreground">{title}</h3>
         <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">{summary}</p>
-        <p className="mt-4 truncate text-xs text-muted-foreground">
-          {dateLabel ? `${dateLabel} · ${kindLabel}` : kindLabel}
+        <p className="mt-4 truncate text-xs text-muted-foreground" title={footer}>
+          {footer}
         </p>
       </Card>
     </Link>

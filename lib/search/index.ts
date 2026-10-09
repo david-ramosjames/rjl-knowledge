@@ -24,6 +24,18 @@ export type KnowledgeSearchResult = {
   rank: number;
 };
 
+const latestMeetingInclude = {
+  discussions: {
+    orderBy: [{ meeting: { meetingDate: "desc" as const } }, { createdAt: "desc" as const }],
+    take: 1,
+    select: { meeting: { select: { title: true } } },
+  },
+} satisfies Prisma.TopicInclude;
+
+function meetingSourceLabel(topic: { discussions?: { meeting?: { title: string } | null }[] }) {
+  return topic.discussions?.[0]?.meeting?.title?.trim() || "Meeting";
+}
+
 type SearchRow = {
   id: string;
   title: string;
@@ -32,6 +44,7 @@ type SearchRow = {
   summary: string;
   lastDiscussedAt: Date | null;
   discussionCount: bigint | number;
+  meetingTitle: string | null;
   rank: number;
 };
 
@@ -75,9 +88,7 @@ async function queryTopics(q: string, category?: string): Promise<KnowledgeSearc
         status: TopicStatus.APPROVED,
         category,
       },
-      include: {
-        _count: { select: { discussions: true } },
-      },
+      include: latestMeetingInclude,
       orderBy: [{ lastDiscussedAt: "desc" }, { updatedAt: "desc" }],
     });
 
@@ -90,7 +101,7 @@ async function queryTopics(q: string, category?: string): Promise<KnowledgeSearc
       category: topic.category,
       summary: topic.summary,
       lastDiscussedAt: topic.lastDiscussedAt,
-      meta: `${topic._count.discussions} source${topic._count.discussions === 1 ? "" : "s"}`,
+      meta: meetingSourceLabel(topic),
       rank: 1,
     }));
   }
@@ -109,6 +120,14 @@ async function queryTopics(q: string, category?: string): Promise<KnowledgeSearc
       (
         SELECT COUNT(*)::int FROM "Discussion" d WHERE d."topicId" = t.id
       ) AS "discussionCount",
+      (
+        SELECT m.title
+        FROM "Discussion" d
+        JOIN "Meeting" m ON m.id = d."meetingId"
+        WHERE d."topicId" = t.id
+        ORDER BY m."meetingDate" DESC, d."createdAt" DESC
+        LIMIT 1
+      ) AS "meetingTitle",
       (
         CASE
           WHEN lower(t.title) = lower(${q}) THEN 100
@@ -147,7 +166,7 @@ async function queryTopics(q: string, category?: string): Promise<KnowledgeSearc
     category: row.category,
     summary: row.summary,
     lastDiscussedAt: row.lastDiscussedAt,
-    meta: `${Number(row.discussionCount)} source${Number(row.discussionCount) === 1 ? "" : "s"}`,
+    meta: row.meetingTitle?.trim() || "Meeting",
     rank: Number(row.rank),
   }));
 }
@@ -236,9 +255,7 @@ export async function getRecentKnowledge(limit = 6): Promise<KnowledgeSearchResu
   const [topics, articles] = await Promise.all([
     prisma.topic.findMany({
       where: { status: TopicStatus.APPROVED },
-      include: {
-        _count: { select: { discussions: true } },
-      },
+      include: latestMeetingInclude,
       orderBy: [{ lastDiscussedAt: "desc" }, { updatedAt: "desc" }],
       take: limit,
     }),
@@ -259,7 +276,7 @@ export async function getRecentKnowledge(limit = 6): Promise<KnowledgeSearchResu
       category: topic.category,
       summary: topic.summary,
       lastDiscussedAt: topic.lastDiscussedAt ?? topic.updatedAt,
-      meta: `${topic._count.discussions} source${topic._count.discussions === 1 ? "" : "s"}`,
+      meta: meetingSourceLabel(topic),
       rank: 1,
     })),
     ...articles.map((article) => ({
@@ -297,9 +314,7 @@ export async function getRelatedKnowledge({
         category,
         ...(excludeKind === "topic" ? { id: { not: excludeId } } : {}),
       },
-      include: {
-        _count: { select: { discussions: true } },
-      },
+      include: latestMeetingInclude,
       orderBy: [{ lastDiscussedAt: "desc" }, { updatedAt: "desc" }],
       take: limit,
     }),
@@ -324,7 +339,7 @@ export async function getRelatedKnowledge({
       category: topic.category,
       summary: topic.summary,
       lastDiscussedAt: topic.lastDiscussedAt ?? topic.updatedAt,
-      meta: `${topic._count.discussions} source${topic._count.discussions === 1 ? "" : "s"}`,
+      meta: meetingSourceLabel(topic),
       rank: 1,
     })),
     ...articles.map((article) => ({
